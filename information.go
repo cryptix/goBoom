@@ -53,3 +53,31 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 
 	return resp.StatusCode, infoResp, nil
 }
+
+type ItemSize struct {
+	Num  float64 `json:"num"`
+	Size float64 `json:"size"`
+}
+
+func (i InformationService) Du() (int, map[string]ItemSize, error) {
+
+	reqParams := make(url.Values, 2)
+	reqParams.Set("token", i.c.User.session)
+
+	req, err := i.c.NewRequest("GET", "du", reqParams)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	duResp := make(map[string]ItemSize)
+	apiResponseCode, resp, err := i.c.DoJson(req, &duResp)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if resp.StatusCode != apiResponseCode {
+		err = fmt.Errorf("resp.StatusCode[%d] != apiResponseCode[%d]", resp.StatusCode, apiResponseCode)
+	}
+
+	return resp.StatusCode, duResp, nil
+}
