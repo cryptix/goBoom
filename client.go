@@ -29,7 +29,7 @@ type Client struct {
 	baseURL *url.URL
 
 	// User agent used when communicating with the PSHDL REST API.
-	UserAgent string
+	userAgent string
 }
 
 // NewClient returns a new PSHDL REST API client.  If a nil httpClient is
@@ -46,7 +46,7 @@ func NewClient(httpClient *http.Client) *Client {
 
 	// httpClient.Jar = cookiejar.New(nil)
 
-	return &Client{c: httpClient, baseURL: baseURL, UserAgent: userAgent}
+	return &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
 }
 
 // NewJsonRequest creates an API request. A relative URL can be provided in urlStr,
@@ -69,7 +69,7 @@ func (c *Client) NewRequest(method, urlStr string, params url.Values) (*http.Req
 	}
 
 	req.Header.Add("Accept", defaultAccept)
-	req.Header.Add("User-Agent", c.UserAgent)
+	req.Header.Add("User-Agent", c.userAgent)
 	return req, nil
 }
 
@@ -99,7 +99,7 @@ func (c *Client) NewJsonRequest(method, urlStr string, body interface{}) (*http.
 	}
 
 	req.Header.Add("Accept", defaultAccept)
-	req.Header.Add("User-Agent", c.UserAgent)
+	req.Header.Add("User-Agent", c.userAgent)
 	return req, nil
 }
 
@@ -118,7 +118,7 @@ func (c *Client) NewReaderRequest(method, urlStr string, body io.Reader, ctype s
 	}
 
 	req.Header.Add("Accept", "text/plain")
-	req.Header.Add("User-Agent", c.UserAgent)
+	req.Header.Add("User-Agent", c.userAgent)
 	req.Header.Set("Content-Type", ctype)
 	if ctype == "" {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

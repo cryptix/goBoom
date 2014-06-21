@@ -52,8 +52,8 @@ func TestNewClient(t *testing.T) {
 			So(c.baseURL.String(), ShouldEqual, defaultBaseURL)
 		})
 
-		Convey("It should have the correct UserAgent", func() {
-			So(c.UserAgent, ShouldEqual, userAgent)
+		Convey("It should have the correct userAgent", func() {
+			So(c.userAgent, ShouldEqual, userAgent)
 		})
 	})
 }
@@ -83,7 +83,7 @@ func TestNewRequest(t *testing.T) {
 
 			Convey("It should have the default user-agent is attached to the request", func() {
 				userAgent := req.Header.Get("User-Agent")
-				So(c.UserAgent, ShouldEqual, userAgent)
+				So(c.userAgent, ShouldEqual, userAgent)
 			})
 		})
 
@@ -104,7 +104,7 @@ func TestNewRequest(t *testing.T) {
 
 			Convey("It should have the default user-agent is attached to the request", func() {
 				userAgent := req.Header.Get("User-Agent")
-				So(c.UserAgent, ShouldEqual, userAgent)
+				So(c.userAgent, ShouldEqual, userAgent)
 			})
 		})
 	})
@@ -139,7 +139,7 @@ func TestNewJsonRequest(t *testing.T) {
 
 			Convey("It should have the default user-agent is attached to the request", func() {
 				userAgent := req.Header.Get("User-Agent")
-				So(c.UserAgent, ShouldEqual, userAgent)
+				So(c.userAgent, ShouldEqual, userAgent)
 			})
 
 		})
