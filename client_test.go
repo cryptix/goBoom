@@ -44,7 +44,15 @@ func teardown() {
 }
 
 func TestNewClient(t *testing.T) {
-	var c *Client
+	var (
+		c   *Client
+		req *http.Request
+	)
+
+	type createPut struct {
+		Name, Email string
+	}
+
 	Convey("Given a new Client", t, func() {
 		c = NewClient(nil)
 
@@ -55,18 +63,8 @@ func TestNewClient(t *testing.T) {
 		Convey("It should have the correct userAgent", func() {
 			So(c.userAgent, ShouldEqual, userAgent)
 		})
-	})
-}
 
-func TestNewRequest(t *testing.T) {
-	var (
-		c *Client
-	)
-
-	Convey("Given a new Client", t, func() {
-		c = NewClient(nil)
-
-		Convey("and a GET Request", func() {
+		Convey("a GET Request", func() {
 			inURL, outURL := "foo", defaultBaseURL+"foo?param1=val1"
 
 			params := url.Values{"param1": []string{"val1"}}
@@ -87,7 +85,7 @@ func TestNewRequest(t *testing.T) {
 			})
 		})
 
-		Convey("and a POST Request", func() {
+		Convey("a POST Request", func() {
 			inURL, outURL := "foo", defaultBaseURL+"foo"
 
 			params := url.Values{"param1": []string{"val1"}}
@@ -107,21 +105,6 @@ func TestNewRequest(t *testing.T) {
 				So(c.userAgent, ShouldEqual, userAgent)
 			})
 		})
-	})
-}
-
-func TestNewJsonRequest(t *testing.T) {
-	var (
-		c   *Client
-		req *http.Request
-	)
-
-	type createPut struct {
-		Name, Email string
-	}
-
-	Convey("Given a new Client", t, func() {
-		c = NewClient(nil)
 
 		Convey("and a valid Request", func() {
 			inURL, outURL := "foo", defaultBaseURL+"foo"
@@ -165,9 +148,6 @@ func TestNewJsonRequest(t *testing.T) {
 			})
 		})
 	})
-}
-
-func TestDo(t *testing.T) {
 
 	Convey("Given a clean test server", t, func() {
 		setup()
@@ -225,5 +205,4 @@ func TestDo(t *testing.T) {
 
 		Reset(teardown)
 	})
-
 }
