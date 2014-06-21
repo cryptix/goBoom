@@ -8,13 +8,17 @@ import (
 	"strings"
 )
 
-type User struct {
+type UserService struct {
 	c *Client
 }
 
-func NewUser() *User {
-	u := &User{}
-	u.c = NewClient(nil)
+func newUserService(c *Client) *UserService {
+	u := &UserService{}
+	if c == nil {
+		u.c = NewClient(nil)
+	} else {
+		u.c = c
+	}
 
 	return u
 }
@@ -47,7 +51,7 @@ type loginResponse struct {
 	} `json:"user"`
 }
 
-func (u *User) Login(name, passw string) (int, *loginResponse, error) {
+func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 	var (
 		liStatus int
 		liResp   loginResponse

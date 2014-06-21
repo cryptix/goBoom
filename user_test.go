@@ -13,8 +13,7 @@ func TestLogin(t *testing.T) {
 	Convey("Given a NewUser()", t, func() {
 		setup()
 
-		user := NewUser()
-		user.c = client
+		user := newUserService(client)
 
 		Convey("Login() should send the request", func() {
 

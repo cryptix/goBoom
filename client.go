@@ -30,6 +30,8 @@ type Client struct {
 
 	// User agent used when communicating with the PSHDL REST API.
 	userAgent string
+
+	User *UserService
 }
 
 // NewClient returns a new PSHDL REST API client.  If a nil httpClient is
