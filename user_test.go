@@ -8,7 +8,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestLogin(t *testing.T) {
+func TestUserService(t *testing.T) {
 
 	Convey("Given a NewUser()", t, func() {
 		setup()
@@ -31,6 +31,11 @@ func TestLogin(t *testing.T) {
 			So(code, ShouldEqual, 200)
 			So(resp.Cookie, ShouldEqual, "1000000000:efcb5ef3efec97aa50c33e1efb183e223633a3bf")
 			So(resp.User.Name, ShouldEqual, "johndoe")
+			So(resp.Session, ShouldEqual, "cb597b3e-cfc4-4329-abe0-5dc2b64a8e9a")
+
+			Convey("Should set the session to onto the user", func() {
+				So(user.session, ShouldEqual, "cb597b3e-cfc4-4329-abe0-5dc2b64a8e9a")
+			})
 		})
 
 		Reset(teardown)

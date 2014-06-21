@@ -64,6 +64,16 @@ func TestNewClient(t *testing.T) {
 			So(c.userAgent, ShouldEqual, userAgent)
 		})
 
+		Convey("It should have a UserService", func() {
+			So(c.User, ShouldHaveSameTypeAs, &UserService{})
+			So(c.User, ShouldNotBeNil)
+		})
+
+		Convey("It should have a InformationService", func() {
+			So(c.Info, ShouldHaveSameTypeAs, &InformationService{})
+			So(c.Info, ShouldNotBeNil)
+		})
+
 		Convey("a GET Request", func() {
 			inURL, outURL := "foo", defaultBaseURL+"foo?param1=val1"
 
@@ -168,8 +178,9 @@ func TestNewClient(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			var f foo
-			_, err = client.DoJson(req, &f)
+			statusCode, _, err := client.DoJson(req, &f)
 			So(err, ShouldBeNil)
+			So(statusCode, ShouldEqual, 200)
 			So(f, ShouldResemble, foo{"n"})
 		})
 

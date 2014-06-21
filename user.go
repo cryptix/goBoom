@@ -10,6 +10,8 @@ import (
 
 type UserService struct {
 	c *Client
+
+	session string
 }
 
 func newUserService(c *Client) *UserService {
@@ -27,16 +29,16 @@ type loginResponse struct {
 	Cookie  string `json:"cookie"`
 	Session string `json:"session"`
 	User    struct {
-		ApiKey      string  `json:"api_key"`
-		Balance     float64 `json:"balance"`
-		Email       string  `json:"email"`
-		ExternalID  string  `json:"external_id"`
-		FtpUsername string  `json:"ftp_username"`
-		ID          string  `json:"id"`
-		Name        string  `json:"name"`
-		Partner     string  `json:"partner"`
-		PartnerLast float64 `json:"partner_last"`
-		Pro         string  `json:"pro"`
+		ApiKey      string      `json:"api_key"`
+		Balance     interface{} `json:"balance"`
+		Email       string      `json:"email"`
+		ExternalID  string      `json:"external_id"`
+		FtpUsername string      `json:"ftp_username"`
+		ID          string      `json:"id"`
+		Name        string      `json:"name"`
+		Partner     string      `json:"partner"`
+		PartnerLast interface{} `json:"partner_last"`
+		Pro         string      `json:"pro"`
 		Settings    struct {
 			Ddl              float64 `json:"ddl"`
 			RewriteBehaviour float64 `json:"rewrite_behaviour"`
@@ -52,10 +54,6 @@ type loginResponse struct {
 }
 
 func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
-	var (
-		liStatus int
-		liResp   loginResponse
-	)
 
 	derived := pbkdf2.Key([]byte(passw), []byte(reverse(passw)), 1000, 16, sha1.New)
 
@@ -69,14 +67,18 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 		return 0, nil, err
 	}
 
-	resp, err := u.c.DoJson(req, &liResp)
+	var liResp loginResponse
+	liStatus, resp, err := u.c.DoJson(req, &liResp)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	if resp.StatusCode != liStatus {
-		err = fmt.Errorf("resp.StatusCode[%d] != liStatus[%d]", resp.StatusCode, liStatus)
+		return liStatus, nil, fmt.Errorf("resp.StatusCode[%d] != liStatus[%d]", resp.StatusCode, liStatus)
 	}
+	fmt.Printf("Status Code[%d]\n", liStatus)
+
+	u.session = liResp.Session
 
 	return resp.StatusCode, &liResp, nil
 }

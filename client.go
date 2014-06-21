@@ -13,7 +13,7 @@ import (
 
 const (
 	libraryVersion = "0.1"
-	defaultBaseURL = "http://www.oboom.com/1.0/"
+	defaultBaseURL = "https://www.oboom.com/1.0/"
 	userAgent      = "goBoom/" + libraryVersion
 
 	defaultAccept    = "application/json"
@@ -32,6 +32,7 @@ type Client struct {
 	userAgent string
 
 	User *UserService
+	Info *InformationService
 }
 
 // NewClient returns a new PSHDL REST API client.  If a nil httpClient is
@@ -48,7 +49,11 @@ func NewClient(httpClient *http.Client) *Client {
 
 	// httpClient.Jar = cookiejar.New(nil)
 
-	return &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
+	client := &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
+	client.User = newUserService(client)
+	client.Info = newInformationService(client)
+
+	return client
 }
 
 // NewJsonRequest creates an API request. A relative URL can be provided in urlStr,
@@ -131,28 +136,29 @@ func (c *Client) NewReaderRequest(method, urlStr string, body io.Reader, ctype s
 // Do sends an API request and returns the API response.  The API response is
 // decoded and stored in the value pointed to by v, or returned as an error if
 // an API error has occurred.
-func (c *Client) DoJson(req *http.Request, v interface{}) (*http.Response, error) {
+func (c *Client) DoJson(req *http.Request, v interface{}) (int, *http.Response, error) {
 	resp, err := c.c.Do(req)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		return resp, err
+		return resp.StatusCode, resp, err
 	}
 
+	var (
+		statusCode int
+		data       json.RawMessage
+	)
+
 	if v != nil {
-		var (
-			statusCode int
-			data       json.RawMessage
-		)
 		apiResp := []interface{}{&statusCode, &data}
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
 		if err != nil {
-			return resp, err
+			return 500, resp, err
 		}
 		switch statusCode {
 		case 200:
@@ -160,14 +166,14 @@ func (c *Client) DoJson(req *http.Request, v interface{}) (*http.Response, error
 		default:
 			var errmsg string
 			if err = json.Unmarshal(data, &errmsg); err != nil {
-				return resp, err
+				return statusCode, resp, err
 			}
 			err = fmt.Errorf("API Code[%d] Error:%s", statusCode, errmsg)
 		}
 
 		resp.Body.Close()
 	}
-	return resp, err
+	return statusCode, resp, err
 }
 
 // DoPlain sends an API request and returns the API response as a slice of bytes.
