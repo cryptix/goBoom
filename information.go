@@ -3,6 +3,7 @@ package goBoom
 import (
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 type InformationService struct {
@@ -20,18 +21,27 @@ func newInformationService(c *Client) *InformationService {
 	return i
 }
 
-func (i InformationService) Info() (int, []string, error) {
+type ItemInfo struct {
+	ID    string  `json:"id"`
+	Name  string  `json:"name"`
+	Root  string  `json:"root"`
+	State string  `json:"state"`
+	Type  string  `json:"type"`
+	User  float64 `json:"user"`
+}
 
-	reqParams := url.Values{
-		"token": []string{i.c.User.session},
-	}
+func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
+
+	reqParams := make(url.Values, 2)
+	reqParams.Set("token", i.c.User.session)
+	reqParams.Set("items", strings.Join(ids, ","))
 
 	req, err := i.c.NewRequest("GET", "info", reqParams)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	var infoResp []string
+	var infoResp []ItemInfo
 	apiResponseCode, resp, err := i.c.DoJson(req, &infoResp)
 	if err != nil {
 		return 0, nil, err

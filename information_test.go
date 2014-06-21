@@ -23,20 +23,18 @@ func TestInformationService(t *testing.T) {
 			mux.HandleFunc("/1.0/info", func(w http.ResponseWriter, r *http.Request) {
 				So(r.Method, ShouldEqual, "GET")
 				So(r.URL.Query().Get("token"), ShouldEqual, "testSession")
-				// So(r.ParseForm(), ShouldBeNil)
-				// So(r.PostForm.Get("auth"), ShouldEqual, "test@mail.com")
-				// So(r.PostForm.Get("pass"), ShouldEqual, "94406d8b3a3876308552d168e56a42f9")
-				fmt.Fprint(w, `[200, ["1", "1C"]]`)
+				So(r.URL.Query().Get("items"), ShouldEqual, "a,b,c")
+				fmt.Fprint(w, `[200,[{"name":"trash","root":"1C","state":"online","user":298814,"type":"folder","id":"1C"},{"name":"public","root":"1","state":"online","user":298814,"type":"folder","id":"1"}]]`)
 			})
 
-			code, resp, err := info.Info()
+			code, resp, err := info.Info("a", "b", "c")
 			So(err, ShouldBeNil)
 			So(code, ShouldEqual, 200)
 
-			So(resp, ShouldHaveSameTypeAs, []string{})
+			So(resp, ShouldHaveSameTypeAs, []ItemInfo{})
 			So(len(resp), ShouldEqual, 2)
-			So(resp[0], ShouldEqual, "1")
-			So(resp[1], ShouldEqual, "1C")
+			So(resp[0], ShouldResemble, ItemInfo{"1C", "trash", "1C", "online", "folder", 298814})
+			So(resp[1], ShouldResemble, ItemInfo{"1", "public", "1", "online", "folder", 298814})
 		})
 
 		Reset(teardown)

@@ -62,7 +62,7 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 		"pass": []string{fmt.Sprintf("%x", derived)},
 	}
 
-	req, err := u.c.NewReaderRequest("POST", "login", strings.NewReader(reqParams.Encode()), "")
+	req, err := u.c.NewReaderRequest("POST", "https://www.oboom.com/1.0/login", strings.NewReader(reqParams.Encode()), "")
 	if err != nil {
 		return 0, nil, err
 	}

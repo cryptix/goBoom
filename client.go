@@ -7,17 +7,19 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	// "net/http/cookiejar"
+	"net/http/cookiejar"
 	"net/url"
 )
 
 const (
 	libraryVersion = "0.1"
-	defaultBaseURL = "https://www.oboom.com/1.0/"
+	defaultBaseURL = "https://api.oboom.com/1.0/"
 	userAgent      = "goBoom/" + libraryVersion
 
 	defaultAccept    = "application/json"
 	defaultMediaType = "application/octet-stream"
+
+	debug = true
 )
 
 // A Client manages communication with the Pshdl Rest API.
@@ -47,8 +49,12 @@ func NewClient(httpClient *http.Client) *Client {
 		panic(err)
 	}
 
-	// httpClient.Jar = cookiejar.New(nil)
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(err)
+	}
 
+	httpClient.Jar = jar
 	client := &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
 	client.User = newUserService(client)
 	client.Info = newInformationService(client)
@@ -154,9 +160,20 @@ func (c *Client) DoJson(req *http.Request, v interface{}) (int, *http.Response, 
 		data       json.RawMessage
 	)
 
+	var body io.Reader = resp.Body
+	if debug == true {
+		bodyBytes, err := ioutil.ReadAll(body)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("DEBUG[%s]\n", string(bodyBytes))
+
+		body = bytes.NewReader(bodyBytes)
+	}
+
 	if v != nil {
 		apiResp := []interface{}{&statusCode, &data}
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
+		err = json.NewDecoder(body).Decode(&apiResp)
 		if err != nil {
 			return 500, resp, err
 		}
