@@ -155,7 +155,7 @@ func (c *Client) NewReaderRequest(method, urlStr string, body io.Reader, ctype s
 // Do sends an API request and returns the API response.  The API response is
 // decoded and stored in the value pointed to by v, or returned as an error if
 // an API error has occurred.
-func (c *Client) DoJson(req *http.Request, v interface{}) (statusCode int, resp *http.Response, err error) {
+func (c *Client) DoJson(req *http.Request, v interface{}) (resp *http.Response, err error) {
 	if v == nil {
 		err = fmt.Errorf("Dont DoJson() with nothing to unmarshal!")
 		return
@@ -166,7 +166,6 @@ func (c *Client) DoJson(req *http.Request, v interface{}) (statusCode int, resp 
 		return
 	}
 
-	statusCode = resp.StatusCode
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response
@@ -196,15 +195,15 @@ func (c *Client) DoJson(req *http.Request, v interface{}) (statusCode int, resp 
 	if len(apiResp) >= 1 {
 		code, ok := apiResp[0].(float64)
 		if !ok {
-			return resp.StatusCode, resp, fmt.Errorf("first result was no float64")
+			err = fmt.Errorf("first result was no float64")
+			return
 		}
 
 		if resp.StatusCode != int(code) {
-			statusCode = 0
 			err = ErrStatusCodeMissmatch{resp.StatusCode, int(code)}
+			resp.StatusCode = 0
 			return
 		}
-		statusCode = int(code)
 	}
 
 	if len(apiResp) == 2 {

@@ -1,7 +1,6 @@
 package goBoom
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 )
@@ -42,13 +41,9 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 	}
 
 	var infoResp []ItemInfo
-	apiResponseCode, resp, err := i.c.DoJson(req, &infoResp)
+	resp, err := i.c.DoJson(req, &infoResp)
 	if err != nil {
 		return 0, nil, err
-	}
-
-	if resp.StatusCode != apiResponseCode {
-		err = fmt.Errorf("resp.StatusCode[%d] != apiResponseCode[%d]", resp.StatusCode, apiResponseCode)
 	}
 
 	return resp.StatusCode, infoResp, nil
@@ -70,13 +65,9 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 	}
 
 	duResp := make(map[string]ItemSize)
-	apiResponseCode, resp, err := i.c.DoJson(req, &duResp)
+	resp, err := i.c.DoJson(req, &duResp)
 	if err != nil {
 		return 0, nil, err
-	}
-
-	if resp.StatusCode != apiResponseCode {
-		err = fmt.Errorf("resp.StatusCode[%d] != apiResponseCode[%d]", resp.StatusCode, apiResponseCode)
 	}
 
 	return resp.StatusCode, duResp, nil
@@ -113,13 +104,9 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 	}
 
 	var lsResp LsInfo
-	apiResponseCode, resp, err := i.c.DoJson(req, &lsResp)
+	resp, err := i.c.DoJson(req, &lsResp)
 	if err != nil {
 		return 0, nil, err
-	}
-
-	if resp.StatusCode != apiResponseCode {
-		err = fmt.Errorf("resp.StatusCode[%d] != apiResponseCode[%d]", resp.StatusCode, apiResponseCode)
 	}
 
 	return resp.StatusCode, &lsResp, nil

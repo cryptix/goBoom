@@ -73,15 +73,10 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 	u.c.baseURL.Host = oldHost
 
 	var liResp loginResponse
-	liStatus, resp, err := u.c.DoJson(req, &liResp)
+	resp, err := u.c.DoJson(req, &liResp)
 	if err != nil {
 		return 0, nil, err
 	}
-
-	if resp.StatusCode != liStatus {
-		return liStatus, nil, fmt.Errorf("resp.StatusCode[%d] != liStatus[%d]", resp.StatusCode, liStatus)
-	}
-	fmt.Printf("Status Code[%d]\n", liStatus)
 
 	u.session = liResp.Session
 

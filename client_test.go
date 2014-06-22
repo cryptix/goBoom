@@ -179,9 +179,9 @@ func TestNewClient(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			var f foo
-			statusCode, _, err := client.DoJson(req, &f)
+			resp, err := client.DoJson(req, &f)
 			So(err, ShouldBeNil)
-			So(statusCode, ShouldEqual, 200)
+			So(resp.StatusCode, ShouldEqual, 200)
 			So(f, ShouldResemble, foo{"n"})
 		})
 
@@ -232,9 +232,9 @@ func TestNewClient(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			var f foo
-			statusCode, _, err := client.DoJson(req, &f)
+			resp, err := client.DoJson(req, &f)
 			So(err, ShouldNotBeNil)
-			So(statusCode, ShouldEqual, 0)
+			So(resp.StatusCode, ShouldEqual, 0)
 			So(err, ShouldResemble, ErrStatusCodeMissmatch{200, 201})
 		})
 
