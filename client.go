@@ -48,6 +48,7 @@ type Client struct {
 
 	User *UserService
 	Info *InformationService
+	FS   *FilesystemService
 }
 
 // NewClient returns a new PSHDL REST API client.  If a nil httpClient is
@@ -71,6 +72,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client := &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
 	client.User = newUserService(client)
 	client.Info = newInformationService(client)
+	client.FS = newFilesystemService(client)
 
 	return client
 }
@@ -225,7 +227,7 @@ func (c *Client) DoJson(req *http.Request, v interface{}) (resp *http.Response, 
 		err = jsonRemarshal(apiResp[2], &(data.Items))
 
 	} else {
-		fmt.Printf("DEBUG:%# v\n", len(apiResp), pretty.Formatter(apiResp))
+		fmt.Printf("DEBUG:%# v\n", pretty.Formatter(apiResp))
 		err = fmt.Errorf("Unknown amount of apiResponses: %d", len(apiResp))
 		return
 

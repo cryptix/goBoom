@@ -74,6 +74,11 @@ func TestNewClient(t *testing.T) {
 			So(c.Info, ShouldNotBeNil)
 		})
 
+		Convey("It should have a FilesystemService", func() {
+			So(c.FS, ShouldHaveSameTypeAs, &FilesystemService{})
+			So(c.FS, ShouldNotBeNil)
+		})
+
 		Convey("a GET Request", func() {
 			inURL, outURL := "foo", defaultBaseURL+"foo?param1=val1"
 
