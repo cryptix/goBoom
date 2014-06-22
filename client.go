@@ -3,12 +3,15 @@ package goBoom
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+
+	"github.com/kr/pretty"
 )
 
 const (
@@ -21,6 +24,16 @@ const (
 
 	debug = true
 )
+
+var (
+	ErrUnknwonFourResponseType = errors.New("Can only handle three responses for InformationService.Ls()")
+)
+
+type ErrStatusCodeMissmatch struct{ Http, Api int }
+
+func (e ErrStatusCodeMissmatch) Error() string {
+	return fmt.Sprintf("ErrStatusCodeMissmatch: http[%d] != api[%d]", e.Http, e.Api)
+}
 
 // A Client manages communication with the Pshdl Rest API.
 type Client struct {
@@ -142,23 +155,24 @@ func (c *Client) NewReaderRequest(method, urlStr string, body io.Reader, ctype s
 // Do sends an API request and returns the API response.  The API response is
 // decoded and stored in the value pointed to by v, or returned as an error if
 // an API error has occurred.
-func (c *Client) DoJson(req *http.Request, v interface{}) (int, *http.Response, error) {
-	resp, err := c.c.Do(req)
-	if err != nil {
-		return 0, nil, err
+func (c *Client) DoJson(req *http.Request, v interface{}) (statusCode int, resp *http.Response, err error) {
+	if v == nil {
+		err = fmt.Errorf("Dont DoJson() with nothing to unmarshal!")
+		return
 	}
 
+	resp, err = c.c.Do(req)
+	if err != nil {
+		return
+	}
+
+	statusCode = resp.StatusCode
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		return resp.StatusCode, resp, err
+		return
 	}
-
-	var (
-		statusCode int
-		data       json.RawMessage
-	)
 
 	var body io.Reader = resp.Body
 	if debug == true {
@@ -171,26 +185,54 @@ func (c *Client) DoJson(req *http.Request, v interface{}) (int, *http.Response, 
 		body = bytes.NewReader(bodyBytes)
 	}
 
-	if v != nil {
-		apiResp := []interface{}{&statusCode, &data}
-		err = json.NewDecoder(body).Decode(&apiResp)
-		if err != nil {
-			return 500, resp, err
-		}
-		switch statusCode {
-		case 200:
-			err = json.Unmarshal(data, &v)
-		default:
-			var errmsg string
-			if err = json.Unmarshal(data, &errmsg); err != nil {
-				return statusCode, resp, err
-			}
-			err = fmt.Errorf("API Code[%d] Error:%s", statusCode, errmsg)
+	var apiResp []interface{}
+	err = json.NewDecoder(body).Decode(&apiResp)
+	if err != nil {
+		err = fmt.Errorf("Json.Decode() failed:%s\n", err)
+		return
+	}
+	resp.Body.Close()
+
+	if len(apiResp) >= 1 {
+		code, ok := apiResp[0].(float64)
+		if !ok {
+			return resp.StatusCode, resp, fmt.Errorf("first result was no float64")
 		}
 
-		resp.Body.Close()
+		if resp.StatusCode != int(code) {
+			statusCode = 0
+			err = ErrStatusCodeMissmatch{resp.StatusCode, int(code)}
+			return
+		}
+		statusCode = int(code)
 	}
-	return statusCode, resp, err
+
+	if len(apiResp) == 2 {
+		err = jsonRemarshal(apiResp[1], &v)
+
+	} else if len(apiResp) == 4 {
+		// suspecting Ls() for pwd, []data until further occurance
+		data, okTarget := v.(*LsInfo)
+		pwd, okPwd := apiResp[1].(map[string]interface{})
+		if !okTarget || !okPwd {
+			err = ErrUnknwonFourResponseType
+			return
+		}
+
+		err = jsonRemarshal(pwd, &(data.Pwd))
+		if err != nil {
+			return
+		}
+		err = jsonRemarshal(apiResp[2], &(data.Items))
+
+	} else {
+		fmt.Printf("DEBUG:%# v\n", len(apiResp), pretty.Formatter(apiResp))
+		err = fmt.Errorf("Unknown amount of apiResponses: %d", len(apiResp))
+		return
+
+	}
+
+	return
 }
 
 // DoPlain sends an API request and returns the API response as a slice of bytes.

@@ -58,6 +58,22 @@ func TestInformationService(t *testing.T) {
 			So(resp["1C"], ShouldResemble, ItemSize{0, 0})
 		})
 
+		Convey("Ls() should send the request", func() {
+			mux.HandleFunc("/1.0/ls", func(w http.ResponseWriter, r *http.Request) {
+				So(r.Method, ShouldEqual, "GET")
+				So(r.URL.Query().Get("token"), ShouldEqual, testSession)
+				So(r.URL.Query().Get("item"), ShouldEqual, "pdfs")
+				fmt.Fprint(w, `[200,{"name":"public","root":"1","state":"online","user":298814,"type":"folder","id":"1"},[{"name":"pdfs","parent":"1","type":"folder","downloads":0,"state":"online","user":298814,"mtime":"2014-06-21 23:23:46.615535","atime":null,"root":"1","id":"99QJ0C6Y","ctime":"2014-06-21 23:23:46.615535"},{"size":1,"name":"test1.txt","parent":"1","type":"file","downloads":0,"thumb_320":false,"state":"online","mime":"text/plain","user":298814,"mtime":"2014-06-22 00:24:15.259402","owner":true,"atime":null,"root":"1","id":"GE308U2K","ctime":"2014-06-22 00:24:10.954148"},{"size":1,"name":"test2.txt","parent":"1","type":"file","downloads":0,"thumb_320":false,"state":"online","mime":"text/plain","user":298814,"mtime":"2014-06-22 00:24:21.074755","owner":true,"atime":null,"root":"1","id":"I1EYJZTU","ctime":"2014-06-22 00:24:17.562414"}],1]`)
+			})
+
+			code, resp, err := info.Ls("pdfs")
+			So(err, ShouldBeNil)
+			So(code, ShouldEqual, 200)
+
+			So(resp.Pwd, ShouldResemble, ItemInfo{"1", "public", "1", "online", "folder", 298814})
+			So(len(resp.Items), ShouldEqual, 3)
+		})
+
 		Reset(teardown)
 	})
 

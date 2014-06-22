@@ -171,6 +171,7 @@ func TestNewClient(t *testing.T) {
 			mux.HandleFunc("/1.0/", func(w http.ResponseWriter, r *http.Request) {
 				So(r.Method, ShouldEqual, "GET")
 
+				w.WriteHeader(200)
 				fmt.Fprint(w, `[200, {"A":"n"}]`)
 			})
 
@@ -212,6 +213,29 @@ func TestNewClient(t *testing.T) {
 
 			_, _, err = client.DoPlain(req)
 			So(err, ShouldNotBeNil)
+		})
+
+		Convey("DoJson() should cat different response codes", func() {
+
+			type foo struct {
+				A string
+			}
+
+			mux.HandleFunc("/1.0/", func(w http.ResponseWriter, r *http.Request) {
+				So(r.Method, ShouldEqual, "GET")
+
+				w.WriteHeader(200)
+				fmt.Fprint(w, `[201, {"A":"n"}]`)
+			})
+
+			req, err := client.NewJsonRequest("GET", "", nil)
+			So(err, ShouldBeNil)
+
+			var f foo
+			statusCode, _, err := client.DoJson(req, &f)
+			So(err, ShouldNotBeNil)
+			So(statusCode, ShouldEqual, 0)
+			So(err, ShouldResemble, ErrStatusCodeMissmatch{200, 201})
 		})
 
 		Reset(teardown)
