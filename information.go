@@ -1,12 +1,6 @@
 package goBoom
 
-import (
-	"errors"
-	"net/url"
-	"strings"
-
-	"github.com/mitchellh/mapstructure"
-)
+import "strings"
 
 type InformationService struct {
 	c *Client
@@ -50,21 +44,9 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 	}
 
 	var infoResp []ItemInfo
-	config := &mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &infoResp}
-
-	dec, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return 0, nil, errors.New("NewDecoder Error:" + err.Error())
+	if err = DecodeInto(&infoResp, arr[1]); err != nil {
+		return resp.Raw.StatusCode, nil, err
 	}
-
-	err = dec.Decode(arr[1])
-	if err != nil {
-		return 0, nil, errors.New("Decode Error:" + err.Error())
-	}
-
-	// pretty.Println(arr[1])
 
 	return resp.Raw.StatusCode, infoResp, nil
 }
@@ -91,19 +73,8 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 	}
 
 	duResp := make(map[string]ItemSize)
-	config := &mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &duResp,
-	}
-
-	dec, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return 0, nil, errors.New("NewDecoder Error:" + err.Error())
-	}
-
-	err = dec.Decode(arr[1])
-	if err != nil {
-		return 0, nil, errors.New("Decode Error:" + err.Error())
+	if err = DecodeInto(&duResp, arr[1]); err != nil {
+		return resp.Raw.StatusCode, nil, err
 	}
 
 	return resp.Raw.StatusCode, duResp, nil
@@ -130,20 +101,29 @@ type ItemStat struct {
 
 func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 
-	reqParams := make(url.Values, 2)
-	reqParams.Set("token", i.c.User.session)
-	reqParams.Set("item", item)
+	params := map[string]string{
+		"token": i.c.User.session,
+		"item":  item,
+	}
 
-	req, err := i.c.NewRequest("GET", "ls", reqParams)
+	resp, err := i.c.api.Res("/1.0/ls").Get(params)
 	if err != nil {
 		return 0, nil, err
+	}
+
+	arr, err := ProcessResponse(resp, err)
+	if err != nil {
+		return resp.Raw.StatusCode, nil, err
 	}
 
 	var lsResp LsInfo
-	resp, err := i.c.DoJson(req, &lsResp)
-	if err != nil {
-		return 0, nil, err
+	if err = DecodeInto(&lsResp.Pwd, arr[1]); err != nil {
+		return resp.Raw.StatusCode, nil, err
 	}
 
-	return resp.StatusCode, &lsResp, nil
+	if err = DecodeInto(&lsResp.Items, arr[2]); err != nil {
+		return resp.Raw.StatusCode, nil, err
+	}
+
+	return resp.Raw.StatusCode, &lsResp, nil
 }

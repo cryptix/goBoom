@@ -13,6 +13,7 @@ import (
 
 	"github.com/bndr/gopencils"
 	"github.com/kr/pretty"
+	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -187,6 +188,25 @@ func ProcessResponse(resp *gopencils.Resource, err error) ([]interface{}, error)
 	}
 
 	return arr, nil
+}
+
+func DecodeInto(t interface{}, input interface{}) error {
+	config := &mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           t,
+	}
+
+	dec, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return errors.New("NewDecoder Error:" + err.Error())
+	}
+
+	err = dec.Decode(input)
+	if err != nil {
+		return errors.New("Decode Error:" + err.Error())
+	}
+
+	return nil
 }
 
 // Do sends an API request and returns the API response.  The API response is
