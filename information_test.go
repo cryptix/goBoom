@@ -22,7 +22,7 @@ func TestInformationService(t *testing.T) {
 		client.User.session = testSession
 
 		Convey("Info(...) should send the req and process the response", func() {
-			mux.HandleFunc("/items", func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc("/1.0/items", func(w http.ResponseWriter, r *http.Request) {
 				So(r.Method, ShouldEqual, "GET")
 				So(r.URL.Query().Get("token"), ShouldEqual, testSession)
 				So(r.URL.Query().Get("items"), ShouldEqual, "a,b,c")

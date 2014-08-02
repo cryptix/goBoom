@@ -2,7 +2,6 @@ package goBoom
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -40,26 +39,21 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 		"items": strings.Join(ids, ","),
 	}
 
-	resp, err := i.c.api.Res("items").Get(params)
+	resp, err := i.c.api.Res("/1.0/items").Get(params)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	// fmt.Println("resp:", resp.Response)
-	arr, err := resp.Response.Array()
+	arr, err := ProcessResponse(resp, err)
 	if err != nil {
-		return 0, nil, err
+		return resp.Raw.StatusCode, nil, err
 	}
 
-	if len(arr) < 1 {
-		return 0, nil, ErrorResponse{resp.Raw, "Illegal oBoom response"}
-	}
-
-	fmt.Println("statusCode:", arr[0])
 	var infoResp []ItemInfo
 	config := &mapstructure.DecoderConfig{
 		WeaklyTypedInput: true,
 		Result:           &infoResp}
+
 	dec, err := mapstructure.NewDecoder(config)
 	if err != nil {
 		return 0, nil, errors.New("NewDecoder Error:" + err.Error())
@@ -82,21 +76,37 @@ type ItemSize struct {
 
 func (i InformationService) Du() (int, map[string]ItemSize, error) {
 
-	reqParams := make(url.Values, 2)
-	reqParams.Set("token", i.c.User.session)
+	params := map[string]string{
+		"token": i.c.User.session,
+	}
 
-	req, err := i.c.NewRequest("GET", "du", reqParams)
+	resp, err := i.c.api.Res("/1.0/du").Get(params)
 	if err != nil {
 		return 0, nil, err
+	}
+
+	arr, err := ProcessResponse(resp, err)
+	if err != nil {
+		return resp.Raw.StatusCode, nil, err
 	}
 
 	duResp := make(map[string]ItemSize)
-	resp, err := i.c.DoJson(req, &duResp)
-	if err != nil {
-		return 0, nil, err
+	config := &mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &duResp,
 	}
 
-	return resp.StatusCode, duResp, nil
+	dec, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return 0, nil, errors.New("NewDecoder Error:" + err.Error())
+	}
+
+	err = dec.Decode(arr[1])
+	if err != nil {
+		return 0, nil, errors.New("Decode Error:" + err.Error())
+	}
+
+	return resp.Raw.StatusCode, duResp, nil
 }
 
 type LsInfo struct {

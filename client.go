@@ -162,6 +162,33 @@ func (c *Client) NewReaderRequest(method, urlStr string, body io.Reader, ctype s
 	return req, nil
 }
 
+func ProcessResponse(resp *gopencils.Resource, err error) ([]interface{}, error) {
+
+	if err := CheckResponse(resp.Raw); err != nil {
+		return nil, err
+	}
+
+	arr, err := resp.Response.Array()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(arr) < 1 {
+		return nil, ErrorResponse{resp.Raw, "Illegal oBoom response"}
+	}
+
+	statusCode, err := resp.Response.GetIndex(0).Int()
+	if err != nil {
+		return nil, err
+	}
+
+	if statusCode != resp.Raw.StatusCode {
+		return nil, ErrorResponse{resp.Raw, fmt.Sprintf("StatusCode missmatch. %d vs %d", statusCode, resp.Raw.StatusCode)}
+	}
+
+	return arr, nil
+}
+
 // Do sends an API request and returns the API response.  The API response is
 // decoded and stored in the value pointed to by v, or returned as an error if
 // an API error has occurred.
