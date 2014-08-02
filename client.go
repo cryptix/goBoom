@@ -11,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
+	"github.com/bndr/gopencils"
 	"github.com/kr/pretty"
 )
 
@@ -37,6 +38,9 @@ func (e ErrStatusCodeMissmatch) Error() string {
 
 // A Client manages communication with the Pshdl Rest API.
 type Client struct {
+	// new rest api client
+	api *gopencils.Resource
+
 	// HTTP client used to communicate with the API.
 	c *http.Client
 
@@ -70,6 +74,10 @@ func NewClient(httpClient *http.Client) *Client {
 
 	httpClient.Jar = jar
 	client := &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
+
+	client.api = gopencils.Api(defaultBaseURL)
+	client.api.SetClient(httpClient)
+
 	client.User = newUserService(client)
 	client.Info = newInformationService(client)
 	client.FS = newFilesystemService(client)
@@ -267,7 +275,7 @@ type ErrorResponse struct {
 	Message  interface{}
 }
 
-func (r *ErrorResponse) Error() string {
+func (r ErrorResponse) Error() string {
 	return fmt.Sprintf("%v %v: %d %+v",
 		r.Response.Request.Method, r.Response.Request.URL,
 		r.Response.StatusCode, r.Message)

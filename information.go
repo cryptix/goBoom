@@ -1,8 +1,12 @@
 package goBoom
 
 import (
+	"errors"
+	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type InformationService struct {
@@ -31,22 +35,44 @@ type ItemInfo struct {
 
 func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 
-	reqParams := make(url.Values, 2)
-	reqParams.Set("token", i.c.User.session)
-	reqParams.Set("items", strings.Join(ids, ","))
+	params := map[string]string{
+		"token": i.c.User.session,
+		"items": strings.Join(ids, ","),
+	}
 
-	req, err := i.c.NewRequest("GET", "info", reqParams)
+	resp, err := i.c.api.Res("items").Get(params)
 	if err != nil {
 		return 0, nil, err
 	}
 
+	// fmt.Println("resp:", resp.Response)
+	arr, err := resp.Response.Array()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if len(arr) < 1 {
+		return 0, nil, ErrorResponse{resp.Raw, "Illegal oBoom response"}
+	}
+
+	fmt.Println("statusCode:", arr[0])
 	var infoResp []ItemInfo
-	resp, err := i.c.DoJson(req, &infoResp)
+	config := &mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &infoResp}
+	dec, err := mapstructure.NewDecoder(config)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, errors.New("NewDecoder Error:" + err.Error())
 	}
 
-	return resp.StatusCode, infoResp, nil
+	err = dec.Decode(arr[1])
+	if err != nil {
+		return 0, nil, errors.New("Decode Error:" + err.Error())
+	}
+
+	// pretty.Println(arr[1])
+
+	return resp.Raw.StatusCode, infoResp, nil
 }
 
 type ItemSize struct {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bndr/gopencils"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -36,6 +37,7 @@ func setup() {
 	client = NewClient(nil)
 	url, _ := url.Parse(server.URL + "/1.0/")
 	client.baseURL = url
+	client.api = gopencils.Api(server.URL + "/1.0/")
 }
 
 // teardown closes the test HTTP server.

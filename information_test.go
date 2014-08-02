@@ -21,8 +21,8 @@ func TestInformationService(t *testing.T) {
 		// fake login
 		client.User.session = testSession
 
-		Convey("Info(...) should send the request", func() {
-			mux.HandleFunc("/1.0/info", func(w http.ResponseWriter, r *http.Request) {
+		Convey("Info(...) should send the req and process the response", func() {
+			mux.HandleFunc("/items", func(w http.ResponseWriter, r *http.Request) {
 				So(r.Method, ShouldEqual, "GET")
 				So(r.URL.Query().Get("token"), ShouldEqual, testSession)
 				So(r.URL.Query().Get("items"), ShouldEqual, "a,b,c")
