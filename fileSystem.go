@@ -23,7 +23,7 @@ func newFilesystemService(c *Client) *FilesystemService {
 }
 
 // Upload
-func (s *FilesystemService) Upload(fname string, input io.Reader) (int, *ItemInfo, error) {
+func (s *FilesystemService) Upload(fname string, input io.Reader) (int, []ItemStat, error) {
 
 	var bodyBuf bytes.Buffer
 	writer := multipart.NewWriter(&bodyBuf)
@@ -44,23 +44,27 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) (int, *ItemInf
 	}
 
 	// prepare request
-	req, err := s.c.NewReaderRequest("POST", "ul", &bodyBuf, writer.FormDataContentType())
-	if err != nil {
-		return 0, nil, err
-	}
+	res := s.c.api.Res("/1.0/ul")
+	res.Payload = &bodyBuf
+	res.Headers.Set("Content-Type", writer.FormDataContentType())
 
 	// set  token
-	q := req.URL.Query()
-	q.Set("token", s.c.User.session)
-	q.Set("parent", "1")
-	req.URL.RawQuery = q.Encode()
-
-	// do the request
-	var item ItemInfo
-	resp, err := s.c.DoJson(req, &item)
-	if err != nil {
-		return resp.StatusCode, nil, err
+	params := map[string]string{
+		"token":  s.c.User.session,
+		"parent": "1",
 	}
 
-	return resp.StatusCode, &item, nil
+	// do the request
+	resp, err := res.FormPost(params)
+	arr, err := ProcessResponse(resp, err)
+	if err != nil {
+		return resp.Raw.StatusCode, nil, err
+	}
+
+	var items []ItemStat
+	if err = DecodeInto(&items, arr[1]); err != nil {
+		return resp.Raw.StatusCode, nil, err
+	}
+
+	return resp.Raw.StatusCode, items, nil
 }

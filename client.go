@@ -1,11 +1,9 @@
 package goBoom
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -23,8 +21,6 @@ const (
 
 	defaultAccept    = "application/json"
 	defaultMediaType = "application/octet-stream"
-
-	debug = true
 )
 
 var (
@@ -86,83 +82,6 @@ func NewClient(httpClient *http.Client) *Client {
 	return client
 }
 
-// NewJsonRequest creates an API request. A relative URL can be provided in urlStr,
-// in which case it is resolved relative to the baseURL of the Client.
-// Relative URLs should always be specified without a preceding slash.
-func (c *Client) NewRequest(method, urlStr string, params url.Values) (*http.Request, error) {
-	rel, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
-
-	u := c.baseURL.ResolveReference(rel)
-	if params != nil {
-		u.RawQuery = params.Encode()
-	}
-
-	req, err := http.NewRequest(method, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Accept", defaultAccept)
-	req.Header.Add("User-Agent", c.userAgent)
-	return req, nil
-}
-
-// NewJsonRequest creates an API request. A relative URL can be provided in urlStr,
-// in which case it is resolved relative to the baseURL of the Client.
-// Relative URLs should always be specified without a preceding slash.  If
-// specified, the value pointed to by body is JSON encoded and included as the
-// request body.
-func (c *Client) NewJsonRequest(method, urlStr string, body interface{}) (*http.Request, error) {
-	rel, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
-
-	u := c.baseURL.ResolveReference(rel)
-	buf := new(bytes.Buffer)
-	if body != nil {
-		err := json.NewEncoder(buf).Encode(body)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	req, err := http.NewRequest(method, u.String(), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Accept", defaultAccept)
-	req.Header.Add("User-Agent", c.userAgent)
-	return req, nil
-}
-
-// NewReaderRequest creates an API request. Uses a io.Reader and ctype instead of marshaling json.
-func (c *Client) NewReaderRequest(method, urlStr string, body io.Reader, ctype string) (*http.Request, error) {
-	rel, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
-
-	u := c.baseURL.ResolveReference(rel)
-
-	req, err := http.NewRequest(method, u.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Accept", "text/plain")
-	req.Header.Add("User-Agent", c.userAgent)
-	req.Header.Set("Content-Type", ctype)
-	if ctype == "" {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	}
-	return req, nil
-}
-
 func ProcessResponse(resp *gopencils.Resource, err error) ([]interface{}, error) {
 
 	if err := CheckResponse(resp.Raw); err != nil {
@@ -203,113 +122,11 @@ func DecodeInto(t interface{}, input interface{}) error {
 
 	err = dec.Decode(input)
 	if err != nil {
+		pretty.Println(input)
 		return errors.New("Decode Error:" + err.Error())
 	}
 
 	return nil
-}
-
-// Do sends an API request and returns the API response.  The API response is
-// decoded and stored in the value pointed to by v, or returned as an error if
-// an API error has occurred.
-func (c *Client) DoJson(req *http.Request, v interface{}) (resp *http.Response, err error) {
-	if v == nil {
-		err = fmt.Errorf("Dont DoJson() with nothing to unmarshal!")
-		return
-	}
-
-	resp, err = c.c.Do(req)
-	if err != nil {
-		return
-	}
-
-	err = CheckResponse(resp)
-	if err != nil {
-		// even though there was an error, we still return the response
-		// in case the caller wants to inspect it further
-		return
-	}
-
-	var body io.Reader = resp.Body
-	if debug == true {
-		bodyBytes, err := ioutil.ReadAll(body)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("DEBUG[%s]\n", string(bodyBytes))
-
-		body = bytes.NewReader(bodyBytes)
-	}
-
-	var apiResp []interface{}
-	err = json.NewDecoder(body).Decode(&apiResp)
-	if err != nil {
-		err = fmt.Errorf("Json.Decode() failed:%s\n", err)
-		return
-	}
-	resp.Body.Close()
-
-	if len(apiResp) >= 1 {
-		code, ok := apiResp[0].(float64)
-		if !ok {
-			err = fmt.Errorf("first result was no float64")
-			return
-		}
-
-		if resp.StatusCode != int(code) {
-			err = ErrStatusCodeMissmatch{resp.StatusCode, int(code)}
-			resp.StatusCode = 0
-			return
-		}
-	}
-
-	if len(apiResp) == 2 {
-		err = jsonRemarshal(apiResp[1], &v)
-
-	} else if len(apiResp) == 4 {
-		// suspecting Ls() for pwd, []data until further occurance
-		data, okTarget := v.(*LsInfo)
-		pwd, okPwd := apiResp[1].(map[string]interface{})
-		if !okTarget || !okPwd {
-			err = ErrUnknwonFourResponseType
-			return
-		}
-
-		err = jsonRemarshal(pwd, &(data.Pwd))
-		if err != nil {
-			return
-		}
-		err = jsonRemarshal(apiResp[2], &(data.Items))
-
-	} else {
-		fmt.Printf("DEBUG:%# v\n", pretty.Formatter(apiResp))
-		err = fmt.Errorf("Unknown amount of apiResponses: %d", len(apiResp))
-		return
-
-	}
-
-	return
-}
-
-// DoPlain sends an API request and returns the API response as a slice of bytes.
-func (c *Client) DoPlain(req *http.Request) ([]byte, *http.Response, error) {
-	req.Header.Set("Accept", "text/plain")
-
-	resp, err := c.c.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer resp.Body.Close()
-
-	err = CheckResponse(resp)
-	if err != nil {
-		// even though there was an error, we still return the response
-		// in case the caller wants to inspect it further
-		return nil, resp, err
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	return data, resp, err
 }
 
 /*

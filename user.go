@@ -1,11 +1,12 @@
 package goBoom
 
 import (
-	"code.google.com/p/go.crypto/pbkdf2"
 	"crypto/sha1"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"code.google.com/p/go.crypto/pbkdf2"
 )
 
 type UserService struct {
@@ -62,23 +63,26 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 		"pass": []string{fmt.Sprintf("%x", derived)},
 	}
 
-	oldHost := u.c.baseURL.Host
-	u.c.baseURL.Host = strings.Replace(u.c.baseURL.Host, "api.oboom.com", "www.oboom.com", 1)
+	oldHost := u.c.api.Api.BaseUrl.Host
+	u.c.api.Api.BaseUrl.Host = strings.Replace(oldHost, "api.oboom.com", "www.oboom.com", 1)
 
-	req, err := u.c.NewReaderRequest("POST", "login", strings.NewReader(reqParams.Encode()), "")
+	res := u.c.api.Res("/1.0/login")
+	res.Headers.Set("Content-Type", "application/x-www-form-urlencoded")
+	res.Payload = strings.NewReader(reqParams.Encode())
+	resp, err := res.FormPost(nil)
+	arr, err := ProcessResponse(resp, err)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	u.c.baseURL.Host = oldHost
+	u.c.api.Api.BaseUrl.Host = oldHost
 
 	var liResp loginResponse
-	resp, err := u.c.DoJson(req, &liResp)
-	if err != nil {
+	if err = DecodeInto(&liResp, arr[1]); err != nil {
 		return 0, nil, err
 	}
 
 	u.session = liResp.Session
 
-	return resp.StatusCode, &liResp, nil
+	return resp.Raw.StatusCode, &liResp, nil
 }

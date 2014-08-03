@@ -1,13 +1,9 @@
 package goBoom
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/bndr/gopencils"
@@ -47,8 +43,7 @@ func teardown() {
 
 func TestNewClient(t *testing.T) {
 	var (
-		c   *Client
-		req *http.Request
+		c *Client
 	)
 
 	type createPut struct {
@@ -80,171 +75,6 @@ func TestNewClient(t *testing.T) {
 			So(c.FS, ShouldHaveSameTypeAs, &FilesystemService{})
 			So(c.FS, ShouldNotBeNil)
 		})
-
-		Convey("a GET Request", func() {
-			inURL, outURL := "foo", defaultBaseURL+"foo?param1=val1"
-
-			params := url.Values{"param1": []string{"val1"}}
-			req, err := c.NewRequest("GET", inURL, params)
-			So(err, ShouldBeNil)
-
-			Convey("It should be a GET request", func() {
-				So(req.Method, ShouldEqual, "GET")
-			})
-
-			Convey("It should have its URL expanded with the parameters", func() {
-				So(req.URL.String(), ShouldEqual, outURL)
-			})
-
-			Convey("It should have the default user-agent is attached to the request", func() {
-				userAgent := req.Header.Get("User-Agent")
-				So(c.userAgent, ShouldEqual, userAgent)
-			})
-		})
-
-		Convey("a POST Request", func() {
-			inURL, outURL := "foo", defaultBaseURL+"foo"
-
-			params := url.Values{"param1": []string{"val1"}}
-			req, err := c.NewReaderRequest("POST", inURL, strings.NewReader(params.Encode()), "")
-			So(err, ShouldBeNil)
-
-			Convey("It should be a POST request", func() {
-				So(req.Method, ShouldEqual, "POST")
-			})
-
-			Convey("It should have its URL expanded", func() {
-				So(req.URL.String(), ShouldEqual, outURL)
-			})
-
-			Convey("It should have the default user-agent is attached to the request", func() {
-				userAgent := req.Header.Get("User-Agent")
-				So(c.userAgent, ShouldEqual, userAgent)
-			})
-		})
-
-		Convey("and a valid Request", func() {
-			inURL, outURL := "foo", defaultBaseURL+"foo"
-			inBody, outBody := &createPut{Name: "l", Email: "hi@me.com"}, `{"Name":"l","Email":"hi@me.com"}`+"\n"
-			req, _ = c.NewJsonRequest("PUT", inURL, inBody)
-
-			Convey("It should have its URL expanded", func() {
-				So(req.URL.String(), ShouldEqual, outURL)
-			})
-
-			Convey("It should encode the body in JSON", func() {
-				body, _ := ioutil.ReadAll(req.Body)
-				So(string(body), ShouldEqual, outBody)
-			})
-
-			Convey("It should have the default user-agent is attached to the request", func() {
-				userAgent := req.Header.Get("User-Agent")
-				So(c.userAgent, ShouldEqual, userAgent)
-			})
-
-		})
-
-		Convey("and an invalid Request", func() {
-			type T struct {
-				A map[int]interface{}
-			}
-			_, err := c.NewJsonRequest("GET", "/", &T{})
-
-			Convey("It should return an error (beeing *json.UnsupportedTypeError)", func() {
-				So(err, ShouldNotBeNil)
-				So(err, ShouldHaveSameTypeAs, &json.UnsupportedTypeError{})
-			})
-
-		})
-
-		Convey("and a bad Request URL", func() {
-			_, err := c.NewJsonRequest("GET", ":", nil)
-			Convey("It should return an error (beeing *url.Error{})", func() {
-				So(err, ShouldNotBeNil)
-				So(err, ShouldHaveSameTypeAs, &url.Error{})
-			})
-		})
 	})
 
-	Convey("Given a clean test server", t, func() {
-		setup()
-
-		Convey("Do() should send the request", func() {
-
-			type foo struct {
-				A string
-			}
-
-			mux.HandleFunc("/1.0/", func(w http.ResponseWriter, r *http.Request) {
-				So(r.Method, ShouldEqual, "GET")
-
-				w.WriteHeader(200)
-				fmt.Fprint(w, `[200, {"A":"n"}]`)
-			})
-
-			req, err := client.NewJsonRequest("GET", "", nil)
-			So(err, ShouldBeNil)
-
-			var f foo
-			resp, err := client.DoJson(req, &f)
-			So(err, ShouldBeNil)
-			So(resp.StatusCode, ShouldEqual, 200)
-			So(f, ShouldResemble, foo{"n"})
-		})
-
-		Convey("A plain request should get response", func() {
-
-			want := `/1.0/servertime`
-
-			mux.HandleFunc("/1.0/", func(w http.ResponseWriter, r *http.Request) {
-				So(r.Method, ShouldEqual, "GET")
-				fmt.Fprint(w, want)
-			})
-
-			req, err := client.NewRequest("GET", "", nil)
-			So(err, ShouldBeNil)
-
-			body, _, err := client.DoPlain(req)
-			So(err, ShouldBeNil)
-			So(string(body), ShouldEqual, want)
-		})
-
-		Convey("A bad plain request should return a http error", func() {
-
-			mux.HandleFunc("/1.0/", func(w http.ResponseWriter, r *http.Request) {
-				http.Error(w, "Bad Request", 400)
-			})
-
-			req, err := client.NewJsonRequest("GET", "", nil)
-			So(err, ShouldBeNil)
-
-			_, _, err = client.DoPlain(req)
-			So(err, ShouldNotBeNil)
-		})
-
-		Convey("DoJson() should cat different response codes", func() {
-
-			type foo struct {
-				A string
-			}
-
-			mux.HandleFunc("/1.0/", func(w http.ResponseWriter, r *http.Request) {
-				So(r.Method, ShouldEqual, "GET")
-
-				w.WriteHeader(200)
-				fmt.Fprint(w, `[201, {"A":"n"}]`)
-			})
-
-			req, err := client.NewJsonRequest("GET", "", nil)
-			So(err, ShouldBeNil)
-
-			var f foo
-			resp, err := client.DoJson(req, &f)
-			So(err, ShouldNotBeNil)
-			So(resp.StatusCode, ShouldEqual, 0)
-			So(err, ShouldResemble, ErrStatusCodeMissmatch{200, 201})
-		})
-
-		Reset(teardown)
-	})
 }
