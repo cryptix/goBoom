@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	libraryVersion = "0.1"
+	libraryVersion = "1.0"
 	defaultBaseURL = "https://api.oboom.com/1.0/"
 	userAgent      = "goBoom/" + libraryVersion
 

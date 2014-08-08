@@ -2,8 +2,10 @@ package goBoom
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"path/filepath"
 )
 
@@ -67,4 +69,45 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) (int, []ItemSt
 	}
 
 	return resp.Raw.StatusCode, items, nil
+}
+
+func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
+	if s.c.User == nil {
+		return -1, nil, errors.New("non pro download not supported")
+	}
+
+	params := map[string]string{
+		"token": s.c.User.session,
+		"item":  item,
+	}
+
+	resp, err := s.c.api.Res("/1.0/dl").Get(params)
+	arr, err := ProcessResponse(resp, err)
+	if err != nil {
+		return resp.Raw.StatusCode, nil, err
+	}
+
+	var (
+		u  url.URL
+		ok bool
+	)
+
+	u.Host, ok = arr[1].(string)
+	if !ok {
+		return -1, nil, errors.New("arr[1] is not a string")
+	}
+
+	ticket, ok := arr[2].(string)
+	if !ok {
+		return -1, nil, errors.New("arr[2] is not a string")
+	}
+
+	u.Scheme = "https"
+	u.Path = libraryVersion + "/dlh"
+
+	qry := u.Query()
+	qry.Set("ticket", ticket)
+	u.RawQuery = qry.Encode()
+
+	return resp.Raw.StatusCode, &u, nil
 }
