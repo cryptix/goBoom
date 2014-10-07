@@ -31,9 +31,9 @@ func setup() {
 
 	// github client configured to use test server
 	client = NewClient(nil)
-	url, _ := url.Parse(server.URL + "/1.0/")
+	url, _ := url.Parse(server.URL + "/1.0")
 	client.baseURL = url
-	client.api = gocrayons.Api(server.URL + "/1.0/")
+	client.api = gocrayons.Api(server.URL + "/1.0")
 }
 
 // teardown closes the test HTTP server.

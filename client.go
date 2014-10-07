@@ -16,7 +16,7 @@ import (
 
 const (
 	libraryVersion = "1.0"
-	defaultBaseURL = "https://api.oboom.com/1.0/"
+	defaultBaseURL = "https://api.oboom.com/1.0"
 	userAgent      = "goBoom/" + libraryVersion
 
 	defaultAccept    = "application/json"
@@ -83,6 +83,10 @@ func NewClient(httpClient *http.Client) *Client {
 }
 
 func ProcessResponse(resp *gocrayons.Resource, err error) ([]interface{}, error) {
+	if err != nil {
+		fmt.Printf("%+v\n", resp.Raw)
+		return nil, err
+	}
 
 	if err := CheckResponse(resp.Raw); err != nil {
 		return nil, err
