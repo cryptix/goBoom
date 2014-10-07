@@ -54,6 +54,7 @@ type loginResponse struct {
 	} `json:"user"`
 }
 
+// Login sends a login request to the service with name and passw as credentials
 func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 
 	derived := pbkdf2.Key([]byte(passw), []byte(reverse(passw)), 1000, 16, sha1.New)
@@ -66,7 +67,7 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 	oldHost := u.c.api.Api.BaseUrl.Host
 	u.c.api.Api.BaseUrl.Host = strings.Replace(oldHost, "api.oboom.com", "www.oboom.com", 1)
 
-	res := u.c.api.Res("/1.0/login")
+	res := u.c.api.Res("login")
 	res.Headers.Set("Content-Type", "application/x-www-form-urlencoded")
 	res.Payload = strings.NewReader(reqParams.Encode())
 	resp, err := res.FormPost(nil)

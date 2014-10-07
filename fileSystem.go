@@ -24,7 +24,7 @@ func newFilesystemService(c *Client) *FilesystemService {
 	return i
 }
 
-// Upload
+// Upload pushes the input io.Reader to the service
 func (s *FilesystemService) Upload(fname string, input io.Reader) (int, []ItemStat, error) {
 
 	var bodyBuf bytes.Buffer
@@ -46,7 +46,7 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) (int, []ItemSt
 	}
 
 	// prepare request
-	res := s.c.api.Res("/1.0/ul")
+	res := s.c.api.Res("ul")
 	res.Payload = &bodyBuf
 	res.Headers.Set("Content-Type", writer.FormDataContentType())
 
@@ -71,6 +71,7 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) (int, []ItemSt
 	return resp.Raw.StatusCode, items, nil
 }
 
+// Download requests a download url for item
 func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 	if s.c.User == nil {
 		return -1, nil, errors.New("non pro download not supported")
@@ -81,7 +82,7 @@ func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 		"item":  item,
 	}
 
-	resp, err := s.c.api.Res("/1.0/dl").Get(params)
+	resp, err := s.c.api.Res("dl").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
 		return resp.Raw.StatusCode, nil, err

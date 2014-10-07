@@ -33,7 +33,7 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 		"items": strings.Join(ids, ","),
 	}
 
-	resp, err := i.c.api.Res("/1.0/info").Get(params)
+	resp, err := i.c.api.Res("info").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
 		return resp.Raw.StatusCode, nil, err
@@ -58,7 +58,7 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 		"token": i.c.User.session,
 	}
 
-	resp, err := i.c.api.Res("/1.0/du").Get(params)
+	resp, err := i.c.api.Res("du").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
 		return resp.Raw.StatusCode, nil, err
@@ -98,7 +98,7 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 		"item":  item,
 	}
 
-	resp, err := i.c.api.Res("/1.0/ls").Get(params)
+	resp, err := i.c.api.Res("ls").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
 		return resp.Raw.StatusCode, nil, err

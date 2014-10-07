@@ -9,7 +9,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
-	"github.com/bndr/gopencils"
+	"github.com/cryptix/gocrayons"
 	"github.com/kr/pretty"
 	"github.com/mitchellh/mapstructure"
 )
@@ -36,7 +36,7 @@ func (e ErrStatusCodeMissmatch) Error() string {
 // A Client manages communication with the Pshdl Rest API.
 type Client struct {
 	// new rest api client
-	api *gopencils.Resource
+	api *gocrayons.Resource
 
 	// HTTP client used to communicate with the API.
 	c *http.Client
@@ -72,7 +72,7 @@ func NewClient(httpClient *http.Client) *Client {
 	httpClient.Jar = jar
 	client := &Client{c: httpClient, baseURL: baseURL, userAgent: userAgent}
 
-	client.api = gopencils.Api(defaultBaseURL)
+	client.api = gocrayons.Api(defaultBaseURL)
 	client.api.SetClient(httpClient)
 
 	client.User = newUserService(client)
@@ -82,7 +82,7 @@ func NewClient(httpClient *http.Client) *Client {
 	return client
 }
 
-func ProcessResponse(resp *gopencils.Resource, err error) ([]interface{}, error) {
+func ProcessResponse(resp *gocrayons.Resource, err error) ([]interface{}, error) {
 
 	if err := CheckResponse(resp.Raw); err != nil {
 		return nil, err
