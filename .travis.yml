@@ -4,3 +4,11 @@ go:
   - 1.2
   - 1.3
   - tip
+install:
+  - go get github.com/bitly/go-simplejson
+  - go get github.com/cryptix/gocrayons
+  - go get github.com/kr/pretty
+  - go get github.com/kr/text
+  - go get github.com/mitchellh/mapstructure
+  - go get code.google.com/p/go.crypto/pbkdf2
+  - go get github.com/smartystreets/goconvey/convey
