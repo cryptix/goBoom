@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/cryptix/goBoom"
@@ -11,12 +13,13 @@ import (
 var client *goBoom.Client
 
 func init() {
+	start := time.Now()
 	client = goBoom.NewClient(nil)
 
 	code, _, err := client.User.Login("email", "clearPassword")
 	check(err)
 
-	log.Println("Login Response: ", code)
+	log.Printf("Login Response: %d (took %v)\n", code, time.Since(start))
 }
 
 func main() {
@@ -27,11 +30,13 @@ func main() {
 			Name:  "ls",
 			Usage: "list...",
 			Action: func(c *cli.Context) {
-				_, ls, err := client.Info.Ls(c.Args().First())
+				wd := c.Args().First()
+				log.Println("Listing ", wd)
+
+				_, ls, err := client.Info.Ls(wd)
 				check(err)
 				for _, item := range ls.Items {
 					log.Printf("%8s - %s\n", item.ID, item.Name)
-
 				}
 			},
 		},
@@ -40,7 +45,17 @@ func main() {
 			ShortName: "p",
 			Usage:     "put a file",
 			Action: func(c *cli.Context) {
-				println("putting:", c.Args().First())
+				fname := c.Args().First()
+
+				file, err := os.Open(fname)
+				check(err)
+
+				log.Println("uploading ", file)
+				_, stats, err := client.FS.Upload(filepath.Base(fname), file)
+				check(err)
+				for _, item := range stats {
+					log.Printf("%8s - %s\n", item.ID, item.Name)
+				}
 			},
 		},
 		{
@@ -54,6 +69,8 @@ func main() {
 					println("no item id")
 					os.Exit(1)
 				}
+
+				log.Println("Requesting link for", item)
 				_, url, err := client.FS.Download(item)
 				check(err)
 				println(url.String())
