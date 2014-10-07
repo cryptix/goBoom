@@ -6,6 +6,7 @@ go:
   - tip
 install:
   - go get github.com/bitly/go-simplejson
+  - go get github.com/codegangsta/cli
   - go get github.com/cryptix/gocrayons
   - go get github.com/kr/pretty
   - go get github.com/kr/text
