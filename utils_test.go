@@ -1,12 +1,11 @@
 package goBoom
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReverse(t *testing.T) {
-	Convey("reverting a simple string", t, func() {
-		So(reverse("test 123"), ShouldEqual, "321 tset")
-	})
+	assert.Equal(t, reverse("test 123"), "321 tset")
 }

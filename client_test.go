@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/cryptix/gocrayons"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -42,39 +42,20 @@ func teardown() {
 }
 
 func TestNewClient(t *testing.T) {
-	var (
-		c *Client
-	)
+	a := assert.New(t)
 
-	type createPut struct {
-		Name, Email string
-	}
+	c := NewClient(nil)
+	a.NotNil(c)
 
-	Convey("Given a new Client", t, func() {
-		c = NewClient(nil)
+	a.Equal(c.baseURL.String(), defaultBaseURL, "wrong BaseURL")
+	a.Equal(c.userAgent, userAgent, "wrong userAgent")
 
-		Convey("It should have the correct BaseURL", func() {
-			So(c.baseURL.String(), ShouldEqual, defaultBaseURL)
-		})
+	a.IsType(c.User, &UserService{})
+	a.NotNil(c.User)
 
-		Convey("It should have the correct userAgent", func() {
-			So(c.userAgent, ShouldEqual, userAgent)
-		})
+	a.NotNil(c.Info, &InformationService{})
+	a.NotNil(c.Info)
 
-		Convey("It should have a UserService", func() {
-			So(c.User, ShouldHaveSameTypeAs, &UserService{})
-			So(c.User, ShouldNotBeNil)
-		})
-
-		Convey("It should have a InformationService", func() {
-			So(c.Info, ShouldHaveSameTypeAs, &InformationService{})
-			So(c.Info, ShouldNotBeNil)
-		})
-
-		Convey("It should have a FilesystemService", func() {
-			So(c.FS, ShouldHaveSameTypeAs, &FilesystemService{})
-			So(c.FS, ShouldNotBeNil)
-		})
-	})
-
+	a.IsType(c.FS, &FilesystemService{})
+	a.NotNil(c.FS)
 }
