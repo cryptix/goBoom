@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"code.google.com/p/go.crypto/pbkdf2"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 type UserService struct {
