@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/cryptix/go/logging"
 	"github.com/cryptix/goBoom"
 )
 
@@ -17,7 +18,7 @@ func init() {
 	client = goBoom.NewClient(nil)
 
 	code, _, err := client.User.Login("email", "clearPassword")
-	check(err)
+	logging.CheckFatal(err)
 
 	log.Printf("Login Response: %d (took %v)\n", code, time.Since(start))
 }
@@ -34,7 +35,7 @@ func main() {
 				log.Println("Listing ", wd)
 
 				_, ls, err := client.Info.Ls(wd)
-				check(err)
+				logging.CheckFatal(err)
 				for _, item := range ls.Items {
 					log.Printf("%8s - %s\n", item.ID, item.Name)
 				}
@@ -48,11 +49,11 @@ func main() {
 				fname := c.Args().First()
 
 				file, err := os.Open(fname)
-				check(err)
+				logging.CheckFatal(err)
 
 				log.Println("uploading ", file)
-				_, stats, err := client.FS.Upload(filepath.Base(fname), file)
-				check(err)
+				stats, err := client.FS.Upload(filepath.Base(fname), file)
+				logging.CheckFatal(err)
 				for _, item := range stats {
 					log.Printf("%8s - %s\n", item.ID, item.Name)
 				}
@@ -72,17 +73,11 @@ func main() {
 
 				log.Println("Requesting link for", item)
 				_, url, err := client.FS.Download(item)
-				check(err)
+				logging.CheckFatal(err)
 				println(url.String())
 			},
 		},
 	}
 
 	app.Run(os.Args)
-}
-
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
 }

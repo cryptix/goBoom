@@ -1,7 +1,6 @@
 package goBoom
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -107,7 +106,10 @@ func ProcessResponse(resp *gocrayons.Resource, err error) ([]interface{}, error)
 	}
 
 	if statusCode != resp.Raw.StatusCode {
-		return nil, ErrorResponse{resp.Raw, fmt.Sprintf("StatusCode missmatch. %d vs %d", statusCode, resp.Raw.StatusCode)}
+		return nil, ErrorResponse{resp.Raw, fmt.Sprintf("StatusCode missmatch. %d vs %d\n%+v",
+			statusCode,
+			resp.Raw.StatusCode,
+			resp.Response)}
 	}
 
 	return arr, nil
@@ -124,8 +126,7 @@ func DecodeInto(t interface{}, input interface{}) error {
 		return errors.New("NewDecoder Error:" + err.Error())
 	}
 
-	err = dec.Decode(input)
-	if err != nil {
+	if err = dec.Decode(input); err != nil {
 		pretty.Println(input)
 		return errors.New("Decode Error:" + err.Error())
 	}
@@ -136,17 +137,17 @@ func DecodeInto(t interface{}, input interface{}) error {
 /*
 An ErrorResponse reports one or more errors caused by an API request.
 
-PSHDL REST API docs: http://developer.github.com/v3/#client-errors
+oBoom API docs: https://www.oboom.com/api
 */
 type ErrorResponse struct {
 	Response *http.Response // HTTP response that caused this error
-	Message  interface{}
+	Body     string
 }
 
 func (r ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %+v",
+	return fmt.Sprintf("%v %v: %d %q",
 		r.Response.Request.Method, r.Response.Request.URL,
-		r.Response.StatusCode, r.Message)
+		r.Response.StatusCode, r.Body)
 }
 
 // CheckResponse checks the API response for errors, and returns them if
@@ -161,7 +162,7 @@ func CheckResponse(r *http.Response) error {
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
 	if err == nil && data != nil {
-		json.Unmarshal(data, errorResponse)
+		errorResponse.Body = string(data)
 	}
 	return errorResponse
 }

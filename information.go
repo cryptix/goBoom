@@ -1,6 +1,13 @@
 package goBoom
 
-import "strings"
+import (
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+
+	"strings"
+)
 
 type InformationService struct {
 	c *Client
@@ -17,16 +24,7 @@ func newInformationService(c *Client) *InformationService {
 	return i
 }
 
-type ItemInfo struct {
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	Root  string  `json:"root"`
-	State string  `json:"state"`
-	Type  string  `json:"type"`
-	User  float64 `json:"user"`
-}
-
-func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
+func (i InformationService) Info(ids ...string) (int, []ItemStat, error) {
 
 	params := map[string]string{
 		"token": i.c.User.session,
@@ -36,10 +34,10 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 	resp, err := i.c.api.Res("info").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 
-	var infoResp []ItemInfo
+	var infoResp []ItemStat
 	if err = DecodeInto(&infoResp, arr[1]); err != nil {
 		return resp.Raw.StatusCode, nil, err
 	}
@@ -48,8 +46,8 @@ func (i InformationService) Info(ids ...string) (int, []ItemInfo, error) {
 }
 
 type ItemSize struct {
-	Num  float64 `json:"num"`
-	Size float64 `json:"size"`
+	Num  int64 `json:"num"`
+	Size int64 `json:"size"`
 }
 
 func (i InformationService) Du() (int, map[string]ItemSize, error) {
@@ -61,7 +59,7 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 	resp, err := i.c.api.Res("du").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 
 	duResp := make(map[string]ItemSize)
@@ -73,22 +71,26 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 }
 
 type LsInfo struct {
-	Pwd   ItemInfo
+	Pwd   ItemStat
 	Items []ItemStat
 }
 
 type ItemStat struct {
-	Atime     interface{} `json:"atime"`
-	Ctime     string      `json:"ctime"`
-	Downloads float64     `json:"downloads"`
-	ID        string      `json:"id"`
-	Mtime     string      `json:"mtime"`
-	Name      string      `json:"name"`
-	Parent    string      `json:"parent"`
-	Root      string      `json:"root"`
-	State     string      `json:"state"`
-	Type      string      `json:"type"`
-	User      float64     `json:"user"`
+	Atime     string `mapstructure:"atime"`
+	Ctime     string `mapstructure:"ctime"`
+	Downloads int64  `mapstructure:"downloads"`
+	ID        string `mapstructure:"id"`
+	Mtime     string `mapstructure:"mtime"`
+	Iname     string `mapstructure:"name"`
+	Parent    string `mapstructure:"parent"`
+	Root      string `mapstructure:"root"`
+	State     string `mapstructure:"state"`
+	Type      string `mapstructure:"type"`
+	User      int64  `mapstructure:"user"`
+	Isize     int64  `mapstructure:"size"`
+	DDL       bool   `mapstructure:"ddl"`
+	Mime      string `mapstructure:"mime"`
+	Owner     bool   `mapstructure:"owner"`
 }
 
 func (i InformationService) Ls(item string) (int, *LsInfo, error) {
@@ -101,7 +103,7 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 	resp, err := i.c.api.Res("ls").Get(params)
 	arr, err := ProcessResponse(resp, err)
 	if err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 
 	var lsResp LsInfo
@@ -114,4 +116,32 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 	}
 
 	return resp.Raw.StatusCode, &lsResp, nil
+}
+
+func (i ItemStat) IsDir() bool {
+	return i.Type == "folder"
+}
+
+func (i ItemStat) ModTime() time.Time {
+	t, err := time.Parse("2006-01-02 15:04:05.000000", i.Mtime)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ItemStat.ModTime Parse(): %s", err)
+		return time.Now()
+	}
+	return t
+}
+
+func (i ItemStat) Mode() os.FileMode {
+	return os.ModePerm
+}
+
+func (i ItemStat) Name() string {
+	return i.ID
+}
+func (i ItemStat) Size() int64 {
+	return i.Isize
+}
+
+func (i ItemStat) Sys() interface{} {
+	return nil
 }

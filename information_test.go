@@ -1,8 +1,9 @@
 package goBoom
 
 import (
-	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,21 +18,51 @@ func TestInformationService_Info(t *testing.T) {
 	info := newInformationService(client)
 	client.User.session = testSession
 
+	want := []ItemStat{
+		{
+			Iname: "trash",
+			Root:  "1C",
+			State: "online",
+			User:  298814,
+			Type:  "folder",
+			ID:    "1C",
+		},
+		{
+			Iname: "public",
+			ID:    "1",
+			Root:  "1",
+			State: "online",
+			User:  298814,
+			Type:  "folder",
+		},
+		{
+			Ctime: "2014-06-21 23:23:46.615535",
+			Mtime: "2014-10-07 16:44:59.208856",
+			Root:  "1",
+			Iname: "pdfs",
+			ID:    "99QJ0C6Y",
+			State: "online",
+			User:  298814,
+			Type:  "folder",
+		},
+	}
+
 	mux.HandleFunc("/1.0/info", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, "GET")
 		assert.Equal(t, r.URL.Query().Get("token"), testSession)
 		assert.Equal(t, r.URL.Query().Get("items"), "a,b,c")
-		fmt.Fprint(w, `[200,[{"name":"trash","root":"1C","state":"online","user":298814,"type":"folder","id":"1C"},{"name":"public","root":"1","state":"online","user":298814,"type":"folder","id":"1"}]]`)
+		cpJson(t, w, "_tests/info.json")
 	})
 
 	code, resp, err := info.Info("a", "b", "c")
 	assert.Nil(t, err)
 	assert.Equal(t, code, http.StatusOK)
 
-	assert.IsType(t, resp, []ItemInfo{})
-	assert.Len(t, resp, 2)
-	assert.Equal(t, resp[0], ItemInfo{"1C", "trash", "1C", "online", "folder", 298814})
-	assert.Equal(t, resp[1], ItemInfo{"1", "public", "1", "online", "folder", 298814})
+	assert.IsType(t, resp, []ItemStat{})
+	assert.Len(t, resp, len(want), "resp has incorrect length")
+	for i := range want {
+		assert.Equal(t, want[i], resp[i], "resp[%d] differs", i)
+	}
 }
 
 func TestInformationService_Du(t *testing.T) {
@@ -44,7 +75,7 @@ func TestInformationService_Du(t *testing.T) {
 	mux.HandleFunc("/1.0/du", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, "GET")
 		assert.Equal(t, r.URL.Query().Get("token"), testSession)
-		fmt.Fprint(w, `[200,{"1":{"num":1,"size":2893557},"1C":{"num":0,"size":0},"total":{"num":1,"size":2893557}}]`)
+		cpJson(t, w, "_tests/du.json")
 	})
 
 	code, resp, err := info.Du()
@@ -67,17 +98,98 @@ func TestInformationService_Ls(t *testing.T) {
 	info := newInformationService(client)
 	client.User.session = testSession
 
+	wantPwd := ItemStat{
+		ID:    "99QJ0C6Y",
+		Root:  "1",
+		Iname: "pdfs",
+		State: "online",
+		Type:  "folder",
+		User:  298814,
+		Ctime: "2014-06-21 23:23:46.615535",
+		Mtime: "2014-10-07 16:44:59.208856",
+	}
+	wantItems := []ItemStat{
+		{
+			Isize:     2893557,
+			Ctime:     "2014-06-16 09:49:07.808925",
+			Parent:    "99QJ0C6Y",
+			Type:      "file",
+			Downloads: 1,
+			Mtime:     "2014-06-21 23:23:49.391054",
+			State:     "online",
+			Mime:      "application/pdf",
+			User:      298814,
+			Owner:     true,
+			Atime:     "2014-06-16 09:49:44.725223",
+			Root:      "1",
+			ID:        "3TRL28BM",
+			Iname:     "gobook.pdf",
+		},
+		{
+			Isize:     368005,
+			Ctime:     "2014-06-21 23:23:12.143749",
+			Parent:    "99QJ0C6Y",
+			Type:      "file",
+			Downloads: 3,
+			Mtime:     "2014-12-25 01:42:58.747235",
+			State:     "online",
+			Mime:      "application/pdf",
+			User:      298814,
+			Owner:     true,
+			Atime:     "2014-12-25 01:42:58.747235",
+			Root:      "1",
+			ID:        "DUT1V03Z",
+			Iname:     "ds160.pdf",
+		},
+		{
+			Isize:     1062822,
+			Ctime:     "2014-06-21 23:23:32.754727",
+			Parent:    "99QJ0C6Y",
+			Type:      "file",
+			Downloads: 1,
+			Mtime:     "2014-08-08 21:25:07.721670",
+			State:     "online",
+			Mime:      "application/pdf",
+			User:      298814,
+			Owner:     true,
+			Atime:     "2014-08-08 21:25:07.721670",
+			Root:      "1",
+			ID:        "L8PHHR89",
+			Iname:     "calculus-indexed.pdf",
+		},
+	}
+
 	mux.HandleFunc("/1.0/ls", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, "GET")
 		assert.Equal(t, r.URL.Query().Get("token"), testSession)
 		assert.Equal(t, r.URL.Query().Get("item"), "pdfs")
-		fmt.Fprint(w, `[200,{"name":"public","root":"1","state":"online","user":298814,"type":"folder","id":"1"},[{"name":"pdfs","parent":"1","type":"folder","downloads":0,"state":"online","user":298814,"mtime":"2014-06-21 23:23:46.615535","atime":null,"root":"1","id":"99QJ0C6Y","ctime":"2014-06-21 23:23:46.615535"},{"size":1,"name":"test1.txt","parent":"1","type":"file","downloads":0,"thumb_320":false,"state":"online","mime":"text/plain","user":298814,"mtime":"2014-06-22 00:24:15.259402","owner":true,"atime":null,"root":"1","id":"GE308U2K","ctime":"2014-06-22 00:24:10.954148"},{"size":1,"name":"test2.txt","parent":"1","type":"file","downloads":0,"thumb_320":false,"state":"online","mime":"text/plain","user":298814,"mtime":"2014-06-22 00:24:21.074755","owner":true,"atime":null,"root":"1","id":"I1EYJZTU","ctime":"2014-06-22 00:24:17.562414"}],1]`)
+		cpJson(t, w, "_tests/ls.json")
 	})
 
 	code, resp, err := info.Ls("pdfs")
 	assert.Nil(t, err)
 	assert.Equal(t, code, http.StatusOK)
 
-	assert.Equal(t, resp.Pwd, ItemInfo{"1", "public", "1", "online", "folder", 298814})
-	assert.Len(t, resp.Items, 3)
+	assert.Equal(t, wantPwd, resp.Pwd)
+	assert.Len(t, resp.Items, len(wantItems), "resp has incorrect length")
+	for i := range wantItems {
+		assert.Equal(t, wantItems[i], resp.Items[i], "resp[%d] differs", i)
+	}
+}
+
+func cpJson(t *testing.T, w io.Writer, path string) {
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("cpJson Open failed: %s", err)
+	}
+
+	_, err = io.Copy(w, f)
+	if err != nil {
+		t.Fatalf("cpJson Copy failed: %s", err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		t.Fatalf("cpJson Close failed: %s", err)
+	}
 }

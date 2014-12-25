@@ -8,8 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFilesystemService(t *testing.T) {
-
+func TestFilesystemService_DL(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -28,4 +27,35 @@ func TestFilesystemService(t *testing.T) {
 	assert.Equal(t, code, http.StatusOK)
 	assert.Equal(t, resp.String(), "https://testdl.host/1.0/dlh?ticket=192388123-123-123123")
 
+}
+
+func TestFilesystemService_UL_Server(t *testing.T) {
+	setup()
+	defer teardown()
+
+	fs := newFilesystemService(client)
+
+	mux.HandleFunc("/1.0/ul/server", func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, "GET")
+		fmt.Fprint(w, `[200, ["s7.oboom.com"]]`)
+	})
+
+	servers, err := fs.GetULServer()
+	assert.Nil(t, err)
+	assert.Len(t, servers, 1)
+	assert.Equal(t, "s7.oboom.com", servers[0])
+
+}
+
+func TestFilesystemService_InterfaceFileSystem(t *testing.T) {
+	setup()
+	defer teardown()
+
+	fs := newFilesystemService(client)
+
+	isFS := func(http.FileSystem) {}
+	isFS(fs)
+
+	_, err := fs.Open("/")
+	assert.Nil(t, err)
 }

@@ -9,3 +9,12 @@ golang API for the oboom.com service
 
 ## Todo
 - [ ] Add `LoginWithHash()` method
+- [ ] Add [context](https://golang.org/x/net/context)
+- [ ] Add lock to BaseURL to prevent races (login/upload use different hosts)
+- [ ] Add tests for Upload()
+- [ ] Remove StatusCode from api, include in error instead
+- [ ] Add Delete Call
+- [ ] Add Tree Call
+- [ ] Add map[name]id for FileSystem
+- [ ] Add Parent to Upload()
+- [ ] Add Mock for service for integration testing of FileSystem

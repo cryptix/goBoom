@@ -1,0 +1,34 @@
+[
+  200,
+  [
+    {
+      "name": "trash",
+      "root": "1C",
+      "state": "online",
+      "user": 298814,
+      "type": "folder",
+      "id": "1C"
+    },
+    {
+      "name": "public",
+      "root": "1",
+      "state": "online",
+      "user": 298814,
+      "type": "folder",
+      "id": "1"
+    },
+    {
+      "ctime": "2014-06-21 23:23:46.615535",
+      "type": "folder",
+      "downloads": 0,
+      "mtime": "2014-10-07 16:44:59.208856",
+      "state": "online",
+      "user": 298814,
+      "ddl": false,
+      "atime": null,
+      "root": "1",
+      "id": "99QJ0C6Y",
+      "name": "pdfs"
+    }
+  ]
+]
