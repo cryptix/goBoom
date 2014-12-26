@@ -16,7 +16,7 @@ var client *goBoom.Client
 func main() {
 	client = goBoom.NewClient(nil)
 
-	code, _, err := client.User.Login("el.rey.de.wonns@gmail.com", "70e878c4")
+	code, _, err := client.User.Login("xxxx", "xxxxx")
 	logging.CheckFatal(err)
 
 	log.Println("Login Response: ", code)
