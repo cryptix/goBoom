@@ -5,100 +5,126 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
-type BoomFile struct {
-	*bytes.Reader
-	ID       string
-	client   *Client
-	readDirN int
-	info     os.FileInfo
+type fsHandler struct {
+	client *Client
+	files  map[string]boomFile
 }
 
-func NewBoomFile(c *Client, name string) (*BoomFile, error) {
-	if len(name) > 0 && name[0] == '/' {
-		name = name[1:]
-	}
-
-	if name == "" {
-		return NewBoomFile(c, "1")
-	}
-
-	if name[len(name)-1] == '/' {
-		name = name[:len(name)-2]
-		return NewBoomFile(c, name)
-	}
-
-	_, info, err := c.Info.Info(name)
+// NewHTTPFS returns a (net/http).FileSystem
+func (c *Client) NewHTTPFS() (*fsHandler, error) {
+	tree, _, err := c.Info.Tree("")
 	if err != nil {
 		return nil, err
 	}
 
-	if len(info) < 1 {
-		return nil, errors.New("api: not found")
+	fh := &fsHandler{
+		client: c,
 	}
 
-	if info[0].Type == "folder" {
-		return &BoomFile{ID: name, client: c, info: info[0]}, nil
+	// BUG(Henry): reload map, add lock and subscribe to changes
+
+	fh.files = make(map[string]boomFile, len(tree))
+	for _, f := range tree {
+		fh.files[f.Iname] = boomFile{
+			id:      f.ID,
+			info:    f,
+			handler: fh,
+		}
 	}
 
-	if info[0].Size() > 1024*1024*5 {
-		return nil, errors.New("can't inline file transfer over 5mb")
+	return fh, nil
+}
+
+// Open implements net/http FileSystem
+func (h *fsHandler) Open(name string) (http.File, error) {
+	if filepath.Separator != '/' && strings.IndexRune(name, filepath.Separator) >= 0 ||
+		strings.Contains(name, "\x00") {
+		return nil, errors.New("http: invalid character in file path")
 	}
 
-	_, url, err := c.FS.Download(name)
-	if err != nil {
+	_, name = filepath.Split(name)
+	if name == "" {
+		name = "public"
+	}
+
+	file, ok := h.files[name]
+	if !ok {
+
 		return nil, os.ErrNotExist
 	}
 
-	resp, err := c.c.Get(url.String())
+	if file.info.IsDir() {
+		return &file, nil
+	}
+
+	if file.info.Size() > 1024*1024*5 {
+		return nil, errors.New("can't inline file transfer over 5mb")
+	}
+
+	return &file, file.load()
+}
+
+type boomFile struct {
+	*bytes.Reader
+	id            string
+	readDirCalled bool
+	info          ItemStat
+	handler       *fsHandler
+}
+
+func (b *boomFile) load() error {
+	_, url, err := b.handler.client.FS.Download(b.id)
 	if err != nil {
-		return nil, err
+		return err
+	}
+
+	resp, err := b.handler.client.c.Get(url.String())
+	if err != nil {
+		return err
 	}
 
 	err = CheckResponse(resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	f := &BoomFile{
-		ID:     name,
-		client: c,
-		info:   info[0],
-	}
-	b, err := ioutil.ReadAll(resp.Body)
+	c, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	f.Reader = bytes.NewReader(b)
+	b.Reader = bytes.NewReader(c)
 
-	return f, resp.Body.Close()
+	return resp.Body.Close()
 }
 
-func (b *BoomFile) Close() error {
+func (b *boomFile) Close() error {
+	b.readDirCalled = false
 	return nil
 }
 
-func (b *BoomFile) Readdir(n int) ([]os.FileInfo, error) {
-	_, ls, err := b.client.Info.Ls(b.ID)
-	if err != nil {
-		return nil, err
-	}
+func (b *boomFile) Readdir(n int) ([]os.FileInfo, error) {
 
-	if b.readDirN == len(ls.Items) {
+	if b.readDirCalled {
 		return nil, io.EOF
 	}
 
-	finfo := make([]os.FileInfo, len(ls.Items))
-	for i := range ls.Items {
-		finfo[i] = ls.Items[i]
+	var finfo []os.FileInfo
+	for _, v := range b.handler.files {
+		if v.info.Parent == b.id {
+			finfo = append(finfo, v.info)
+		}
 	}
-	b.readDirN += len(finfo)
+	b.readDirCalled = true
 	return finfo, nil
 }
 
-func (b *BoomFile) Stat() (os.FileInfo, error) {
+func (b *boomFile) Stat() (os.FileInfo, error) {
 	return b.info, nil
 }

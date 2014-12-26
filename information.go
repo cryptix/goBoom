@@ -1,10 +1,7 @@
 package goBoom
 
 import (
-	"fmt"
 	"net/http"
-	"os"
-	"time"
 
 	"strings"
 )
@@ -75,24 +72,6 @@ type LsInfo struct {
 	Items []ItemStat
 }
 
-type ItemStat struct {
-	Atime     string `mapstructure:"atime"`
-	Ctime     string `mapstructure:"ctime"`
-	Downloads int64  `mapstructure:"downloads"`
-	ID        string `mapstructure:"id"`
-	Mtime     string `mapstructure:"mtime"`
-	Iname     string `mapstructure:"name"`
-	Parent    string `mapstructure:"parent"`
-	Root      string `mapstructure:"root"`
-	State     string `mapstructure:"state"`
-	Type      string `mapstructure:"type"`
-	User      int64  `mapstructure:"user"`
-	Isize     int64  `mapstructure:"size"`
-	DDL       bool   `mapstructure:"ddl"`
-	Mime      string `mapstructure:"mime"`
-	Owner     bool   `mapstructure:"owner"`
-}
-
 func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 
 	params := map[string]string{
@@ -118,50 +97,32 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 	return resp.Raw.StatusCode, &lsResp, nil
 }
 
-func (i ItemStat) IsDir() bool {
-	return i.Type == "folder"
-}
-
-func (i ItemStat) ModTime() time.Time {
-	const format = `2006-01-02 15:04:05.000000`
-	var (
-		t   = time.Now()
-		err error
-	)
-	switch {
-	case i.Mtime != "":
-		t, err = time.Parse(format, i.Mtime)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ItemStat(%s).ModTime Parse(Mtime): %s\n", i.ID, err)
-		}
-	case i.Ctime != "":
-		t, err = time.Parse(format, i.Mtime)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ItemStat(%s).ModTime Parse(Mtime): %s\n", i.ID, err)
-		}
-	case i.Atime != "":
-		t, err = time.Parse(format, i.Atime)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ItemStat(%s).ModTime Parse(Mtime): %s\n", i.ID, err)
-		}
-	default:
-		return t
+func (i *InformationService) Tree(rev string) ([]ItemStat, map[string]string, error) {
+	params := map[string]string{
+		"token": i.c.User.session,
 	}
 
-	return t
-}
+	if rev != "" {
+		params["revision"] = rev
+	}
 
-func (i ItemStat) Mode() os.FileMode {
-	return os.ModePerm
-}
+	resp, err := i.c.api.Res("tree").Get(params)
+	arr, err := ProcessResponse(resp, err)
+	if err != nil {
+		return nil, nil, err
+	}
 
-func (i ItemStat) Name() string {
-	return i.ID
-}
-func (i ItemStat) Size() int64 {
-	return i.Isize
-}
+	var items []ItemStat
+	err = DecodeInto(&items, arr[1])
+	if err != nil {
+		return nil, nil, err
+	}
 
-func (i ItemStat) Sys() interface{} {
-	return nil
+	var revs map[string]string
+	err = DecodeInto(&revs, arr[2])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return items, revs, nil
 }

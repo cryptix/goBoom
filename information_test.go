@@ -177,6 +177,62 @@ func TestInformationService_Ls(t *testing.T) {
 	}
 }
 
+func TestInformationService_Tree(t *testing.T) {
+	setup()
+	defer teardown()
+
+	info := newInformationService(client)
+	client.User.session = testSession
+
+	wantTree := []ItemStat{
+		{
+			Ctime:     "2014-12-25 12:54:56.734294",
+			Parent:    "1C",
+			Root:      "1C",
+			Downloads: 0,
+			State:     "online",
+			User:      298814,
+			Mtime:     "2014-12-25 12:55:07.626095",
+			Type:      "folder",
+			ID:        "TCNCL2X2",
+			Iname:     "test1",
+		},
+		{
+			Ctime:     "2014-12-25 12:54:01.294567",
+			Parent:    "1C",
+			Root:      "1C",
+			Downloads: 1,
+			Iname:     "File.txt",
+			State:     "online",
+			Mime:      "text/plain",
+			User:      298814,
+			Mtime:     "2014-12-25 12:54:17.324197",
+			Atime:     "2014-12-25 12:54:09.696367",
+			Type:      "file",
+			ID:        "MB06AK12",
+			Isize:     1,
+			Owner:     true,
+		},
+	}
+	wantRevs := map[string]string{
+		"298814": "j3NWVmSdLlB",
+	}
+	mux.HandleFunc("/1.0/tree", func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, "GET")
+		assert.Equal(t, r.URL.Query().Get("token"), testSession)
+		cpJson(t, w, "_tests/tree.json")
+	})
+
+	tree, revs, err := info.Tree("")
+	assert.Nil(t, err)
+
+	assert.Equal(t, wantRevs, revs)
+	assert.Len(t, tree, len(wantTree), "resp has incorrect length")
+	for i := range wantTree {
+		assert.Equal(t, wantTree[i], tree[i], "resp[%d] differs", i)
+	}
+}
+
 func cpJson(t *testing.T, w io.Writer, path string) {
 	f, err := os.Open(path)
 	if err != nil {

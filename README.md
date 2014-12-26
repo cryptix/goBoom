@@ -14,7 +14,7 @@ golang API for the oboom.com service
 - [ ] Add tests for Upload()
 - [ ] Remove StatusCode from api, include in error instead
 - [ ] Add Delete Call
-- [ ] Add Tree Call
-- [ ] Add map[name]id for FileSystem
+- [x] Add Tree Call
+- [x] Add map[name]id for FileSystem
 - [ ] Add Parent to Upload()
 - [ ] Add Mock for service for integration testing of FileSystem

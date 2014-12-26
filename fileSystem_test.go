@@ -46,24 +46,3 @@ func TestFilesystemService_UL_Server(t *testing.T) {
 	assert.Equal(t, "s7.oboom.com", servers[0])
 
 }
-
-func TestFilesystemService_InterfaceFileSystem(t *testing.T) {
-	setup()
-	defer teardown()
-
-	fs := newFilesystemService(client)
-	fs.c.User.session = "testSession"
-
-	mux.HandleFunc("/1.0/info", func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.Method, "GET")
-		assert.Equal(t, r.URL.Query().Get("token"), testSession)
-		assert.Equal(t, r.URL.Query().Get("items"), "1")
-		cpJson(t, w, "_tests/info.json")
-	})
-
-	isFS := func(http.FileSystem) {}
-	isFS(fs)
-
-	_, err := fs.Open("/")
-	assert.Nil(t, err)
-}

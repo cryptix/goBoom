@@ -144,8 +144,3 @@ func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 
 	return resp.Raw.StatusCode, &u, nil
 }
-
-// Open implements net/http FileSystem
-func (s *FilesystemService) Open(name string) (http.File, error) {
-	return NewBoomFile(s.c, name)
-}

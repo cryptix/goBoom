@@ -13,22 +13,21 @@ import (
 
 var client *goBoom.Client
 
-func init() {
+func main() {
 	client = goBoom.NewClient(nil)
 
 	code, _, err := client.User.Login("el.rey.de.wonns@gmail.com", "70e878c4")
 	logging.CheckFatal(err)
 
 	log.Println("Login Response: ", code)
-}
 
-func main() {
-	var err error
+	fs, err := client.NewHTTPFS()
+	logging.CheckFatal(err)
 
 	n := negroni.New()
 	n.Use(negroni.NewRecovery())
 	n.Use(negroni.NewLogger())
-	n.UseHandler(http.FileServer(client.FS))
+	n.UseHandler(http.FileServer(fs))
 
 	port := os.Getenv("PORT")
 	if port == "" {
