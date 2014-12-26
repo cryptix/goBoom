@@ -28,13 +28,13 @@ func newFilesystemService(c *Client) *FilesystemService {
 
 func (s *FilesystemService) GetULServer() ([]string, error) {
 	resp, err := s.c.api.Res("ul/server").Get(nil)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return nil, err
 	}
 
 	var servers []string
-	if err = DecodeInto(&servers, arr[1]); err != nil {
+	if err = decodeInto(&servers, arr[1]); err != nil {
 		return nil, err
 	}
 
@@ -89,14 +89,14 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) ([]ItemStat, e
 
 	// do the request
 	resp, err := res.FormPost(params)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return nil, err
 	}
 	s.c.api.Api.BaseUrl.Host = oldHost
 
 	var items []ItemStat
-	if err = DecodeInto(&items, arr[1]); err != nil {
+	if err = decodeInto(&items, arr[1]); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +115,7 @@ func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 	}
 
 	resp, err := s.c.api.Res("dl").Get(params)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

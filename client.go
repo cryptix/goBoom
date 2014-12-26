@@ -1,3 +1,4 @@
+// package goBoom implements clients for the oBoom API. Docs: https://www.oboom.com/api
 package goBoom
 
 import (
@@ -32,7 +33,7 @@ func (e ErrStatusCodeMissmatch) Error() string {
 	return fmt.Sprintf("ErrStatusCodeMissmatch: http[%d] != api[%d]", e.Http, e.Api)
 }
 
-// A Client manages communication with the Pshdl Rest API.
+// A Client manages communication with the oBoom API.
 type Client struct {
 	// new rest api client
 	api *gocrayons.Resource
@@ -81,13 +82,13 @@ func NewClient(httpClient *http.Client) *Client {
 	return client
 }
 
-func ProcessResponse(resp *gocrayons.Resource, err error) ([]interface{}, error) {
+func processResponse(resp *gocrayons.Resource, err error) ([]interface{}, error) {
 	if err != nil {
 		fmt.Printf("%+v\n", resp.Raw)
 		return nil, err
 	}
 
-	if err := CheckResponse(resp.Raw); err != nil {
+	if err := checkResponse(resp.Raw); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +116,7 @@ func ProcessResponse(resp *gocrayons.Resource, err error) ([]interface{}, error)
 	return arr, nil
 }
 
-func DecodeInto(t interface{}, input interface{}) error {
+func decodeInto(t interface{}, input interface{}) error {
 	config := &mapstructure.DecoderConfig{
 		WeaklyTypedInput: true,
 		Result:           t,
@@ -136,8 +137,6 @@ func DecodeInto(t interface{}, input interface{}) error {
 
 /*
 An ErrorResponse reports one or more errors caused by an API request.
-
-oBoom API docs: https://www.oboom.com/api
 */
 type ErrorResponse struct {
 	Response *http.Response // HTTP response that caused this error
@@ -150,12 +149,12 @@ func (r ErrorResponse) Error() string {
 		r.Response.StatusCode, r.Body)
 }
 
-// CheckResponse checks the API response for errors, and returns them if
+// checkResponse checks the API response for errors, and returns them if
 // present.  A response is considered an error if it has a status code outside
 // the 200 range.  API error responses are expected to have either no response
 // body, or a JSON response body that maps to ErrorResponse.  Any other
 // response body will be silently ignored.
-func CheckResponse(r *http.Response) error {
+func checkResponse(r *http.Response) error {
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}

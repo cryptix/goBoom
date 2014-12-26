@@ -71,7 +71,7 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 	res.Headers.Set("Content-Type", "application/x-www-form-urlencoded")
 	res.Payload = strings.NewReader(reqParams.Encode())
 	resp, err := res.FormPost(nil)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -79,7 +79,7 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 	u.c.api.Api.BaseUrl.Host = oldHost
 
 	var liResp loginResponse
-	if err = DecodeInto(&liResp, arr[1]); err != nil {
+	if err = decodeInto(&liResp, arr[1]); err != nil {
 		return 0, nil, err
 	}
 

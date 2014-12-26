@@ -89,7 +89,7 @@ func (b *boomFile) load() error {
 		return err
 	}
 
-	err = CheckResponse(resp)
+	err = checkResponse(resp)
 	if err != nil {
 		return err
 	}

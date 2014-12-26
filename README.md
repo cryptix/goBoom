@@ -18,3 +18,4 @@ golang API for the oboom.com service
 - [x] Add map[name]id for FileSystem
 - [ ] Add Parent to Upload()
 - [ ] Add Mock for service for integration testing of FileSystem
+- [ ] Better timeout control

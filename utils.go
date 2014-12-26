@@ -1,10 +1,5 @@
 package goBoom
 
-import (
-	"encoding/json"
-	"fmt"
-)
-
 func reverse(input string) string {
 	runes := make([]rune, len(input))
 	n := 0
@@ -21,20 +16,4 @@ func reverse(input string) string {
 
 	// Convert back to UTF-8.
 	return string(runes)
-}
-
-// ugly way to help with multiple unknown json return values
-func jsonRemarshal(in, out interface{}) (err error) {
-	// ugly remarshall...
-	tmp, err := json.Marshal(in)
-	if err != nil {
-		return fmt.Errorf("Remashal failed during Marshal():%s\n", err)
-	}
-
-	err = json.Unmarshal(tmp, out)
-	if err != nil {
-		return fmt.Errorf("Remashal failed during Unmarshal():%s\n", err)
-	}
-
-	return nil
 }

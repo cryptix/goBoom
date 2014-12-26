@@ -29,13 +29,13 @@ func (i InformationService) Info(ids ...string) (int, []ItemStat, error) {
 	}
 
 	resp, err := i.c.api.Res("info").Get(params)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
 	var infoResp []ItemStat
-	if err = DecodeInto(&infoResp, arr[1]); err != nil {
+	if err = decodeInto(&infoResp, arr[1]); err != nil {
 		return resp.Raw.StatusCode, nil, err
 	}
 
@@ -54,13 +54,13 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 	}
 
 	resp, err := i.c.api.Res("du").Get(params)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
 	duResp := make(map[string]ItemSize)
-	if err = DecodeInto(&duResp, arr[1]); err != nil {
+	if err = decodeInto(&duResp, arr[1]); err != nil {
 		return resp.Raw.StatusCode, nil, err
 	}
 
@@ -80,17 +80,17 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 	}
 
 	resp, err := i.c.api.Res("ls").Get(params)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
 	var lsResp LsInfo
-	if err = DecodeInto(&lsResp.Pwd, arr[1]); err != nil {
+	if err = decodeInto(&lsResp.Pwd, arr[1]); err != nil {
 		return resp.Raw.StatusCode, nil, err
 	}
 
-	if err = DecodeInto(&lsResp.Items, arr[2]); err != nil {
+	if err = decodeInto(&lsResp.Items, arr[2]); err != nil {
 		return resp.Raw.StatusCode, nil, err
 	}
 
@@ -107,19 +107,19 @@ func (i *InformationService) Tree(rev string) ([]ItemStat, map[string]string, er
 	}
 
 	resp, err := i.c.api.Res("tree").Get(params)
-	arr, err := ProcessResponse(resp, err)
+	arr, err := processResponse(resp, err)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var items []ItemStat
-	err = DecodeInto(&items, arr[1])
+	err = decodeInto(&items, arr[1])
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var revs map[string]string
-	err = DecodeInto(&revs, arr[2])
+	err = decodeInto(&revs, arr[2])
 	if err != nil {
 		return nil, nil, err
 	}
