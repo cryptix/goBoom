@@ -37,7 +37,7 @@ func main() {
 				_, ls, err := client.Info.Ls(wd)
 				logging.CheckFatal(err)
 				for _, item := range ls.Items {
-					log.Printf("%8s - %s\n", item.ID, item.Name)
+					log.Printf("%8s - %s\n", item.ID, item.Name())
 				}
 			},
 		},
@@ -55,7 +55,7 @@ func main() {
 				stats, err := client.FS.Upload(filepath.Base(fname), file)
 				logging.CheckFatal(err)
 				for _, item := range stats {
-					log.Printf("%8s - %s\n", item.ID, item.Name)
+					log.Printf("%8s - %s\n", item.ID, item.Name())
 				}
 			},
 		},

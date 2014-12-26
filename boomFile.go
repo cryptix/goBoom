@@ -5,14 +5,12 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
 type BoomFile struct {
-	ID string
 	*bytes.Reader
-
+	ID       string
 	client   *Client
 	readDirN int
 	info     os.FileInfo
@@ -22,8 +20,6 @@ func NewBoomFile(c *Client, name string) (*BoomFile, error) {
 	if len(name) > 0 && name[0] == '/' {
 		name = name[1:]
 	}
-
-	log.Printf("NewBoomFile(%q)", name)
 
 	if name == "" {
 		return NewBoomFile(c, "1")
@@ -39,8 +35,7 @@ func NewBoomFile(c *Client, name string) (*BoomFile, error) {
 		return nil, err
 	}
 
-	log.Printf("Info returned(%s) %+v", name, info)
-	if len(info) != 1 {
+	if len(info) < 1 {
 		return nil, errors.New("api: not found")
 	}
 
@@ -48,9 +43,12 @@ func NewBoomFile(c *Client, name string) (*BoomFile, error) {
 		return &BoomFile{ID: name, client: c, info: info[0]}, nil
 	}
 
+	if info[0].Size() > 1024*1024*5 {
+		return nil, errors.New("can't inline file transfer over 5mb")
+	}
+
 	_, url, err := c.FS.Download(name)
 	if err != nil {
-		log.Printf("NewBoomFile(%q) DownloadErr:%v", name, err)
 		return nil, os.ErrNotExist
 	}
 
@@ -58,6 +56,7 @@ func NewBoomFile(c *Client, name string) (*BoomFile, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = CheckResponse(resp)
 	if err != nil {
 		return nil, err
@@ -75,17 +74,14 @@ func NewBoomFile(c *Client, name string) (*BoomFile, error) {
 
 	f.Reader = bytes.NewReader(b)
 
-	return f, nil
+	return f, resp.Body.Close()
 }
 
 func (b *BoomFile) Close() error {
-	log.Println("implement Close()")
 	return nil
 }
 
 func (b *BoomFile) Readdir(n int) ([]os.FileInfo, error) {
-	log.Println("implement Readdir()", n)
-
 	_, ls, err := b.client.Info.Ls(b.ID)
 	if err != nil {
 		return nil, err

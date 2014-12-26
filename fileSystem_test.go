@@ -52,6 +52,14 @@ func TestFilesystemService_InterfaceFileSystem(t *testing.T) {
 	defer teardown()
 
 	fs := newFilesystemService(client)
+	fs.c.User.session = "testSession"
+
+	mux.HandleFunc("/1.0/info", func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, "GET")
+		assert.Equal(t, r.URL.Query().Get("token"), testSession)
+		assert.Equal(t, r.URL.Query().Get("items"), "1")
+		cpJson(t, w, "_tests/info.json")
+	})
 
 	isFS := func(http.FileSystem) {}
 	isFS(fs)

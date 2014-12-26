@@ -123,11 +123,31 @@ func (i ItemStat) IsDir() bool {
 }
 
 func (i ItemStat) ModTime() time.Time {
-	t, err := time.Parse("2006-01-02 15:04:05.000000", i.Mtime)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "ItemStat.ModTime Parse(): %s", err)
-		return time.Now()
+	const format = `2006-01-02 15:04:05.000000`
+	var (
+		t   = time.Now()
+		err error
+	)
+	switch {
+	case i.Mtime != "":
+		t, err = time.Parse(format, i.Mtime)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ItemStat(%s).ModTime Parse(Mtime): %s\n", i.ID, err)
+		}
+	case i.Ctime != "":
+		t, err = time.Parse(format, i.Mtime)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ItemStat(%s).ModTime Parse(Mtime): %s\n", i.ID, err)
+		}
+	case i.Atime != "":
+		t, err = time.Parse(format, i.Atime)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ItemStat(%s).ModTime Parse(Mtime): %s\n", i.ID, err)
+		}
+	default:
+		return t
 	}
+
 	return t
 }
 
