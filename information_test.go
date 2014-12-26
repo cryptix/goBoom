@@ -54,9 +54,8 @@ func TestInformationService_Info(t *testing.T) {
 		cpJson(t, w, "_tests/info.json")
 	})
 
-	code, resp, err := info.Info("a", "b", "c")
+	resp, err := info.Info("a", "b", "c")
 	assert.Nil(t, err)
-	assert.Equal(t, code, http.StatusOK)
 
 	assert.IsType(t, resp, []ItemStat{})
 	assert.Len(t, resp, len(want), "resp has incorrect length")
@@ -78,9 +77,8 @@ func TestInformationService_Du(t *testing.T) {
 		cpJson(t, w, "_tests/du.json")
 	})
 
-	code, resp, err := info.Du()
+	resp, err := info.Du()
 	assert.Nil(t, err)
-	assert.Equal(t, code, http.StatusOK)
 
 	dummyMap := make(map[string]ItemSize)
 	assert.IsType(t, resp, dummyMap)
@@ -166,9 +164,8 @@ func TestInformationService_Ls(t *testing.T) {
 		cpJson(t, w, "_tests/ls.json")
 	})
 
-	code, resp, err := info.Ls("pdfs")
+	resp, err := info.Ls("pdfs")
 	assert.Nil(t, err)
-	assert.Equal(t, code, http.StatusOK)
 
 	assert.Equal(t, wantPwd, resp.Pwd)
 	assert.Len(t, resp.Items, len(wantItems), "resp has incorrect length")

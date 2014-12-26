@@ -79,7 +79,7 @@ type boomFile struct {
 }
 
 func (b *boomFile) load() error {
-	_, url, err := b.handler.client.FS.Download(b.id)
+	url, err := b.handler.client.FS.Download(b.id)
 	if err != nil {
 		return err
 	}

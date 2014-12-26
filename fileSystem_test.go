@@ -22,9 +22,8 @@ func TestFilesystemService_DL(t *testing.T) {
 		fmt.Fprint(w, `[200, "testdl.host", "192388123-123-123123"]`)
 	})
 
-	code, resp, err := fs.Download("1234")
+	resp, err := fs.Download("1234")
 	assert.Nil(t, err)
-	assert.Equal(t, code, http.StatusOK)
 	assert.Equal(t, resp.String(), "https://testdl.host/1.0/dlh?ticket=192388123-123-123123")
 
 }

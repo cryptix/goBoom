@@ -1,10 +1,6 @@
 package goBoom
 
-import (
-	"net/http"
-
-	"strings"
-)
+import "strings"
 
 type InformationService struct {
 	c *Client
@@ -21,7 +17,7 @@ func newInformationService(c *Client) *InformationService {
 	return i
 }
 
-func (i InformationService) Info(ids ...string) (int, []ItemStat, error) {
+func (i InformationService) Info(ids ...string) ([]ItemStat, error) {
 
 	params := map[string]string{
 		"token": i.c.User.session,
@@ -31,15 +27,15 @@ func (i InformationService) Info(ids ...string) (int, []ItemStat, error) {
 	resp, err := i.c.api.Res("info").Get(params)
 	arr, err := processResponse(resp, err)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return nil, err
 	}
 
 	var infoResp []ItemStat
 	if err = decodeInto(&infoResp, arr[1]); err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return nil, err
 	}
 
-	return resp.Raw.StatusCode, infoResp, nil
+	return infoResp, nil
 }
 
 type ItemSize struct {
@@ -47,7 +43,7 @@ type ItemSize struct {
 	Size int64 `json:"size"`
 }
 
-func (i InformationService) Du() (int, map[string]ItemSize, error) {
+func (i InformationService) Du() (map[string]ItemSize, error) {
 
 	params := map[string]string{
 		"token": i.c.User.session,
@@ -56,15 +52,15 @@ func (i InformationService) Du() (int, map[string]ItemSize, error) {
 	resp, err := i.c.api.Res("du").Get(params)
 	arr, err := processResponse(resp, err)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return nil, err
 	}
 
 	duResp := make(map[string]ItemSize)
 	if err = decodeInto(&duResp, arr[1]); err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return nil, err
 	}
 
-	return resp.Raw.StatusCode, duResp, nil
+	return duResp, nil
 }
 
 type LsInfo struct {
@@ -72,7 +68,7 @@ type LsInfo struct {
 	Items []ItemStat
 }
 
-func (i InformationService) Ls(item string) (int, *LsInfo, error) {
+func (i InformationService) Ls(item string) (*LsInfo, error) {
 
 	params := map[string]string{
 		"token": i.c.User.session,
@@ -82,19 +78,19 @@ func (i InformationService) Ls(item string) (int, *LsInfo, error) {
 	resp, err := i.c.api.Res("ls").Get(params)
 	arr, err := processResponse(resp, err)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return nil, err
 	}
 
 	var lsResp LsInfo
 	if err = decodeInto(&lsResp.Pwd, arr[1]); err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return nil, err
 	}
 
 	if err = decodeInto(&lsResp.Items, arr[2]); err != nil {
-		return resp.Raw.StatusCode, nil, err
+		return nil, err
 	}
 
-	return resp.Raw.StatusCode, &lsResp, nil
+	return &lsResp, nil
 }
 
 func (i *InformationService) Tree(rev string) ([]ItemStat, map[string]string, error) {

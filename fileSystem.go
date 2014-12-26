@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -104,9 +103,9 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) ([]ItemStat, e
 }
 
 // Download requests a download url for item
-func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
+func (s *FilesystemService) Download(item string) (*url.URL, error) {
 	if s.c.User == nil {
-		return -1, nil, errors.New("non pro download not supported")
+		return nil, errors.New("non pro download not supported")
 	}
 
 	params := map[string]string{
@@ -117,7 +116,7 @@ func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 	resp, err := s.c.api.Res("dl").Get(params)
 	arr, err := processResponse(resp, err)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return nil, err
 	}
 
 	var (
@@ -127,12 +126,12 @@ func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 
 	u.Host, ok = arr[1].(string)
 	if !ok {
-		return -1, nil, errors.New("arr[1] is not a string")
+		return nil, errors.New("arr[1] is not a string")
 	}
 
 	ticket, ok := arr[2].(string)
 	if !ok {
-		return -1, nil, errors.New("arr[2] is not a string")
+		return nil, errors.New("arr[2] is not a string")
 	}
 
 	u.Scheme = "https"
@@ -142,5 +141,5 @@ func (s *FilesystemService) Download(item string) (int, *url.URL, error) {
 	qry.Set("ticket", ticket)
 	u.RawQuery = qry.Encode()
 
-	return resp.Raw.StatusCode, &u, nil
+	return &u, nil
 }

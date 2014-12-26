@@ -55,7 +55,7 @@ type loginResponse struct {
 }
 
 // Login sends a login request to the service with name and passw as credentials
-func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
+func (u *UserService) Login(name, passw string) (*loginResponse, error) {
 
 	derived := pbkdf2.Key([]byte(passw), []byte(reverse(passw)), 1000, 16, sha1.New)
 
@@ -73,17 +73,17 @@ func (u *UserService) Login(name, passw string) (int, *loginResponse, error) {
 	resp, err := res.FormPost(nil)
 	arr, err := processResponse(resp, err)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
 	u.c.api.Api.BaseUrl.Host = oldHost
 
 	var liResp loginResponse
 	if err = decodeInto(&liResp, arr[1]); err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
 	u.session = liResp.Session
 
-	return resp.Raw.StatusCode, &liResp, nil
+	return &liResp, nil
 }
