@@ -186,6 +186,14 @@ func TestInformationService_Tree(t *testing.T) {
 
 	wantTree := []ItemStat{
 		{
+			Iname: "public",
+			ID:    "1",
+			Root:  "1",
+			State: "online",
+			User:  298814,
+			Type:  "folder",
+		},
+		{
 			Ctime:     "2014-12-25 12:54:56.734294",
 			Parent:    "1C",
 			Root:      "1C",

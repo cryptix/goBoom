@@ -10,7 +10,6 @@ import (
 	"net/url"
 
 	"github.com/cryptix/gocrayons"
-	"github.com/kr/pretty"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -128,7 +127,6 @@ func decodeInto(t interface{}, input interface{}) error {
 	}
 
 	if err = dec.Decode(input); err != nil {
-		pretty.Println(input)
 		return errors.New("Decode Error:" + err.Error())
 	}
 

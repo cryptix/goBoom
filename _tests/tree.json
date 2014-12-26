@@ -2,6 +2,14 @@
   200,
   [
     {
+      "name": "public",
+      "root": "1",
+      "state": "online",
+      "user": 298814,
+      "type": "folder",
+      "id": "1"
+    },
+    {
       "ctime": "2014-12-25 12:54:56.734294",
       "parent": "1C",
       "root": "1C",
