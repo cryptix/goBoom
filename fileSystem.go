@@ -72,7 +72,7 @@ func (s *FilesystemService) Rm(toTrash bool, items ...string) error {
 }
 
 // Upload pushes the input io.Reader to the service
-func (s *FilesystemService) Upload(fname string, input io.Reader) ([]ItemStat, error) {
+func (s *FilesystemService) Upload(parent, fname string, input io.Reader) ([]ItemStat, error) {
 
 	servers, err := s.GetULServer()
 	if err != nil {
@@ -113,7 +113,7 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) ([]ItemStat, e
 	params := map[string]string{
 		"token":       s.c.User.session,
 		"name_policy": "rename",
-		"parent":      "1", // TODO: configure parent
+		"parent":      parent,
 	}
 
 	// do the request
@@ -133,7 +133,7 @@ func (s *FilesystemService) Upload(fname string, input io.Reader) ([]ItemStat, e
 }
 
 // RawUpload expects a multipart io.Reader and pushes it to the service
-func (s *FilesystemService) RawUpload(ct string, clen int64, multiBody io.Reader) ([]ItemStat, error) {
+func (s *FilesystemService) RawUpload(parent, ct string, clen int64, multiBody io.Reader) ([]ItemStat, error) {
 
 	servers, err := s.GetULServer()
 	if err != nil {
@@ -156,7 +156,7 @@ func (s *FilesystemService) RawUpload(ct string, clen int64, multiBody io.Reader
 	qry := req.URL.Query()
 	qry.Set("token", s.c.User.session)
 	qry.Set("name_policy", "rename")
-	qry.Set("parent", "1")
+	qry.Set("parent", parent)
 	req.URL.RawQuery = qry.Encode()
 
 	resp, err := s.c.c.Do(req)
