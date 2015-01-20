@@ -42,7 +42,33 @@ func (s *FilesystemService) GetULServer() ([]string, error) {
 	}
 
 	return servers, nil
+}
 
+func (s *FilesystemService) Mkdir(parent, name string) error {
+	params := map[string]string{
+		"token":  s.c.User.session,
+		"name":   name,
+		"parent": parent,
+	}
+	resp, err := s.c.api.Res("mkdir").Get(params)
+	_, err = processResponse(resp, err)
+	return err
+}
+
+func (s *FilesystemService) Rm(toTrash bool, items ...string) error {
+	params := map[string]string{
+		"token": s.c.User.session,
+		"items": strings.Join(items, ","),
+	}
+	if toTrash == false {
+		params["move_to_trash"] = "false"
+	} else {
+		params["move_to_trash"] = "true"
+	}
+
+	resp, err := s.c.api.Res("rm").Get(params)
+	_, err = processResponse(resp, err)
+	return err
 }
 
 // Upload pushes the input io.Reader to the service
@@ -119,7 +145,7 @@ func (s *FilesystemService) RawUpload(ct string, clen int64, multiBody io.Reader
 	}
 
 	// prepare request
-	req, err := http.NewRequest("POST", "http://"+servers[0]+"/1.0/ul", multiBody)
+	req, err := http.NewRequest("POST", "https://"+servers[0]+"/1.0/ul", multiBody)
 	if err != nil {
 		return nil, err
 	}
